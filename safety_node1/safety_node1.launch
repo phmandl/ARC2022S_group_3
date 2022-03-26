@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<launch>
+ 	<arg name="ttc_th" default="0.13" />
+  	  	
+	 <include 
+ 		file="$(find f1tenth_simulator)/launch/simulator.launch">
+ 	</include>
+ 
+ 	<node 
+	 	pkg="safety_node1" 
+	 	name="safety_node" 
+	 	type="safety_node" 
+	 	output="screen">
+	 	<rosparam command="load" file="$(find f1tenth_simulator)/params.yaml"/>
+	 	<param name="brake_ttc_threshold" value="$(arg ttc_th)"/>
+	 </node>
+	 
+</launch>
+	
