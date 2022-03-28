@@ -18,7 +18,7 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 ######################################
 
 # Add includes
-include_directories(include)
+#include_directories(include)
 file(GLOB SRC_FILES src/*.cpp)
 add_library(${PROJECT_NAME} ${SRC_FILES})
 target_link_libraries(${PROJECT_NAME} ${LIBS})
@@ -28,8 +28,8 @@ set(LIBS ${LIBS} ${PROJECT_NAME})
 # which defaults to /usr/local
 install(TARGETS ${PROJECT_NAME}
         DESTINATION lib)
-install(DIRECTORY include/${PROJECT_NAME}
-        DESTINATION include)
+#install(DIRECTORY include/${PROJECT_NAME}
+        #DESTINATION include)
 
 
 
@@ -54,12 +54,12 @@ if(DEFINED CATKIN_DEVEL_PREFIX)
 
   # Include catkin_libraries
   catkin_package(
-      INCLUDE_DIRS include
+      #INCLUDE_DIRS include
       LIBRARIES ${PROJECT_NAME}
       CATKIN_DEPENDS message_runtime
   )
   set(LIBS ${LIBS} ${catkin_LIBRARIES})
-  include_directories(include ${catkin_INCLUDE_DIRS})
+  	include_directories(include ${catkin_INCLUDE_DIRS})
 
 
   
@@ -74,14 +74,14 @@ if(DEFINED CATKIN_DEVEL_PREFIX)
   endforeach()
 
   # Install the library
-  install(TARGETS ${PROJECT_NAME}
-      ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-      LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-      RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-  )
-  install(DIRECTORY include/${PROJECT_NAME}/
-      DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
-  )
+  #install(TARGETS ${PROJECT_NAME}
+      #ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+      #LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+      #RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+  #)
+  #install(DIRECTORY include/${PROJECT_NAME}/
+      #DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+  #)
 endif()
 
 ######################################

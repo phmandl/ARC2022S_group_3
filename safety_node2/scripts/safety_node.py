@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import rospy
 
 # TODO: import ROS msg types and libraries
@@ -36,8 +36,8 @@ class Safety(object):
         self.brake_bool_pub=rospy.Publisher("brake_bool",Bool,queue_size=1)
         self.brake_pub=rospy.Publisher("brake",AckermannDriveStamped,queue_size=1)
         
-        self.brake_ttc_threshold=rospy.get_param('~brake_ttc_threshold')
-        
+        #self.brake_ttc_threshold=rospy.get_param('~brake_ttc_threshold')
+        self.brake_ttc_threshold=.3
         scan_beams=rospy.get_param('~scan_beams')
         wheelbase=rospy.get_param('~wheelbase')
         width=rospy.get_param('~width')
