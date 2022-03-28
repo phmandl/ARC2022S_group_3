@@ -1,3 +1,5 @@
+# changes for rqt_reconfigure: http://wiki.ros.org/dynamic_reconfigure/Tutorials/SettingUpDynamicReconfigureForANode
+
 cmake_minimum_required(VERSION 3.1)
 
 project(safety_node1)
@@ -48,21 +50,22 @@ if(DEFINED CATKIN_DEVEL_PREFIX)
     std_msgs
     
     message_generation
+    dynamic_reconfigure 
     )
 
-  
+  # dyanmic reconfigure
+  generate_dynamic_reconfigure_options( cfg/configure.cfg) 
 
   # Include catkin_libraries
   catkin_package(
-      #INCLUDE_DIRS include
+      INCLUDE_DIRS cfg/cpp
       LIBRARIES ${PROJECT_NAME}
-      CATKIN_DEPENDS message_runtime
+      CATKIN_DEPENDS message_runtime 
   )
   set(LIBS ${LIBS} ${catkin_LIBRARIES})
-  	include_directories(include ${catkin_INCLUDE_DIRS})
-
-
-  
+  include_directories(
+    include ${catkin_INCLUDE_DIRS}
+    )
 
   # Add the nodes
   file(GLOB NODE_SRC_FILES src/*.cpp)
@@ -87,5 +90,4 @@ endif()
 ######################################
 # < End ROS
 ######################################
-
 

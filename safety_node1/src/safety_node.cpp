@@ -13,6 +13,9 @@
 #include <cmath>
 #include <vector>
 
+// add dynamic reconfigure
+#include <dynamic_reconfigure/server.h>
+#include <safety_node1/safety_node1Config.h>
 
 //using namespace racecar_simulator;
 
@@ -44,6 +47,8 @@ private:
     std_msgs:: Bool brk;
     
     static constexpr double PI = 3.1415;
+    dynamic_reconfigure::Server<safety_node1::safety_node1Config> server;
+    dynamic_reconfigure::Server<safety_node1::safety_node1Config>::CallbackType f;
     
        
 
@@ -70,7 +75,7 @@ public:
         */
 
         // TODO: create ROS subscribers and publishers
-        
+
         //ref: behavior_controller.cpp       
         // Make a publisher for brake messages
         brake_bool_pub = n.advertise<std_msgs::Bool>("brake_bool", 1);
@@ -99,7 +104,18 @@ public:
         cosines = get_cosines(scan_beams, -scan_fov/2.0, scan_ang_incr);
         car_distances = get_car_distances(scan_beams, wheelbase, width, 
         scan_distance_to_base_link, -scan_fov/2.0, scan_ang_incr);
+
+        
+        // Set up a dynamic reconfigure server
+        f = boost::bind(&Safety::callback, this, _1, _2);
+        server.setCallback(f);
      }
+
+    void callback(safety_node1::safety_node1Config &config, uint32_t level) {
+        ROS_INFO("Init TTC-Threshold: %f", 
+                    config.ttc_threshold);
+        brake_ttc_threshold = config.ttc_threshold;
+    }
     
     void odom_callback(const nav_msgs::Odometry &odom_msg) 
     {
