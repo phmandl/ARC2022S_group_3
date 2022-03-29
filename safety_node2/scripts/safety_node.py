@@ -37,14 +37,14 @@ class Safety(object):
         self.brake_pub=rospy.Publisher("brake",AckermannDriveStamped,queue_size=1)
         
         #self.brake_ttc_threshold=rospy.get_param('~brake_ttc_threshold')
-        self.brake_ttc_threshold=.3
-        scan_beams=rospy.get_param('~scan_beams')
-        wheelbase=rospy.get_param('~wheelbase')
-        width=rospy.get_param('~width')
-        scan_dist_to_base_link=rospy.get_param('~scan_distance_to_base_link')
-        scan_fov=rospy.get_param('~scan_field_of_view')
+        self.brake_ttc_threshold=.15
+        scan_beams=rospy.get_param('/f1tenth_simulator/scan_beams')
+        wheelbase=rospy.get_param('/f1tenth_simulator/wheelbase')
+        width=rospy.get_param('/f1tenth_simulator/width')
+        scan_dist_to_base_link=rospy.get_param('/f1tenth_simulator/scan_distance_to_base_link')
+        scan_fov=rospy.get_param('/f1tenth_simulator/scan_field_of_view')
         scan_angle_incr=scan_fov/scan_beams
-        
+       
         self.cos,self.car_dist=self.cos_car_dist(scan_beams, 
 		                                 wheelbase, 
 		                                 width, 
@@ -68,7 +68,7 @@ class Safety(object):
         		
             if(ttc<self.brake_ttc_threshold and ttc>=0):
                     ack_msg=AckermannDriveStamped()
-                    ack_msg.header.stamp=rospy.Time.now()
+                    #ack_msg.header.stamp=rospy.Time.now()
                     ack_msg.drive.steering_angle=0.0
                     ack_msg.drive.speed=0.0
                     self.brake_pub.publish(ack_msg)
