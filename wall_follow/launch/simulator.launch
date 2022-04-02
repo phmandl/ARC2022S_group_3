@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<launch>
+  	  	
+	 <include 
+ 		file="$(find safety_node1)/launch/simulator.launch">
+ 	</include>
+ 
+ 	<node 
+	 	pkg="wall_follow" 
+	 	name="wall_follow" 
+	 	type="wall_follow.py" 
+	 	output="screen">
+	 </node>
+	 
+</launch>
+	
