@@ -8,7 +8,7 @@
  	<node 
 	 	pkg="wall_follow" 
 	 	name="wall_follow" 
-	 	type="safety_node.py" 
+	 	type="wall_follow_node.py" 
 	 	output="screen">
 	 </node>
 	 
