@@ -227,6 +227,56 @@ Visualization Manager:
       Transport Hint: raw
       Unreliable: false
       Value: false
+    - Class: rviz/TF
+      Enabled: true
+      Frame Timeout: 15
+      Frames:
+        All Enabled: true
+        back_left_wheel:
+          Value: true
+        back_right_wheel:
+          Value: true
+        base_link:
+          Value: true
+        front_left_hinge:
+          Value: true
+        front_left_wheel:
+          Value: true
+        front_right_hinge:
+          Value: true
+        front_right_wheel:
+          Value: true
+        laser:
+          Value: true
+        laser_model:
+          Value: true
+        map:
+          Value: true
+      Marker Alpha: 1
+      Marker Scale: 1
+      Name: TF
+      Show Arrows: true
+      Show Axes: true
+      Show Names: true
+      Tree:
+        map:
+          base_link:
+            back_left_wheel:
+              {}
+            back_right_wheel:
+              {}
+            front_left_hinge:
+              front_left_wheel:
+                {}
+            front_right_hinge:
+              front_right_wheel:
+                {}
+            laser:
+              {}
+            laser_model:
+              {}
+      Update Interval: 0
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -293,5 +343,5 @@ Window Geometry:
   Views:
     collapsed: true
   Width: 1073
-  X: 1242
-  Y: 44
+  X: 1892
+  Y: 551

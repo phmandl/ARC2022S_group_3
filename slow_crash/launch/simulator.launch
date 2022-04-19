@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<launch>
+
+	 <include 
+ 		file="$(find safety_node1)/launch/simulator.launch">
+ 	</include>
+ 
+ 	<node 
+	 	pkg="slow_crash" 
+	 	name="slow_crash" 
+	 	type="slow_crash_node.py" 
+	 	output="screen">
+	 </node>
+	 
+</launch>
+	

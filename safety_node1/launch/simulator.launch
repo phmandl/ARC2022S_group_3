@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <launch>
- 	<arg name="ttc_th" default="0.13" />
+ 	<arg name="ttc_th" default="0.3" />
   	  	
 	 <include 
  		file="$(find f1tenth_simulator)/launch/simulator.launch">
