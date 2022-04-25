@@ -1,14 +1,14 @@
-#!/usr/bin/env python3
-from __future__ import print_function
-from ast import If
+#!/usr/bin/env python
+# from __future__ import print_function
+# from ast import If
 import sys
-import math
-from urllib.parse import MAX_CACHE_SIZE
+# import math
+# from urllib.parse import MAX_CACHE_SIZE
 import numpy as np
 
 #ROS Imports
 import rospy
-from std_msgs.msg import Float64
+# from std_msgs.msg import Float64
 from sensor_msgs.msg import Image, LaserScan
 from ackermann_msgs.msg import AckermannDriveStamped, AckermannDrive
 
@@ -48,26 +48,26 @@ class SlowCrash:
         self.Ki = 0.0
         self.Kd = 0.001
         self.N = 100
-        self.e0 = 0
-        self.e1 = 0
-        self.e2 = 0
-        self.u0 = 0
-        self.u1 = 0
-        self.u2 = 0
-        self.Dt = 0
-        self.Dtp1 = 0
-        self.alpha = 0
-        self.angle = 0
-        self.velocity = 0
-        self.midRayRange = 0
+        self.e0 = 0.0
+        self.e1 = 0.0
+        self.e2 = 0.0
+        self.u0 = 0.0
+        self.u1 = 0.0
+        self.u2 = 0.0
+        self.Dt = 0.0
+        self.Dtp1 = 0.0
+        self.alpha = 0.0
+        self.angle = 0.0
+        self.velocity = 0.0
+        self.midRayRange = 0.0
         self.lookahead = MAX_LOOKAHEAD
 
     def pid_control(self):
 
         # Discrete Time PID see https://www.scilab.org/discrete-time-pid-controller-implementation
         a0 = (1 + self.N*TS)
-        a1 = -1*(2 + self.N*TS)
-        a2 = 1
+        a1 = -1.0*(2 + self.N*TS)
+        a2 = 1.0
         b0 = self.Kp*(1 + self.N*TS) + self.Ki*TS*(1 + self.N*TS) + self.Kd*self.N
         b1 = -1*(self.Kp*(2 + self.N*TS) + self.Ki*TS + 2*self.Kd*self.N)
         b2 = self.Kp + self.Kd*self.N

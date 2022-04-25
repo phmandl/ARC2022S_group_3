@@ -45,13 +45,12 @@ private:
     
     // boolean data variable
     std_msgs:: Bool brk;
+    bool globalBrake = false;
     
     static constexpr double PI = 3.1415;
     dynamic_reconfigure::Server<safety_node1::safety_node1Config> server;
     dynamic_reconfigure::Server<safety_node1::safety_node1Config>::CallbackType f;
     
-       
-
 public:
     Safety() {
         n = ros::NodeHandle();
@@ -90,13 +89,17 @@ public:
          // Get params for precomputation and collision detection
         int scan_beams;
         double scan_fov, scan_ang_incr,wheelbase, width,scan_distance_to_base_link;
-        n_internal.getParam("brake_ttc_threshold", brake_ttc_threshold);
-        // brake_ttc_threshold=1;
-        n_internal.getParam("scan_beams", scan_beams);
-        n_internal.getParam("scan_distance_to_base_link", scan_distance_to_base_link);
-        n_internal.getParam("width", width);
-        n_internal.getParam("wheelbase", wheelbase);
-        n_internal.getParam("scan_field_of_view", scan_fov);
+        // n_internal.getParam("brake_ttc_threshold", brake_ttc_threshold);
+        brake_ttc_threshold= 0.3;
+        // n_internal.getParam("scan_beams", scan_beams);
+        scan_beams = 1080;
+        // n_internal.getParam("scan_distance_to_base_link", scan_distance_to_base_link);
+        scan_distance_to_base_link = 0.275;
+        // n_internal.getParam("width", width);
+        width = 0.2032;
+        // n_internal.getParam("wheelbase", wheelbase);
+        wheelbase = 0.3302;
+        // n_internal.getParam("scan_field_of_view", scan_fov);
         scan_ang_incr = scan_fov / scan_beams;
         
         
@@ -131,14 +134,23 @@ public:
         double ttc_min = 2;
         double min_dis = 30;
 
-        if(speed!=0)
+        if(speed!=0 && globalBrake != true)
         {
+            // ROS_INFO("Middle Ray Distance: %f", scan_msg.ranges[540]);
+            // ROS_INFO("Speed: %f", speed);
+            // ROS_INFO("ttc_easy: %f", scan_msg.ranges[540]/speed);
+
         	for(size_t i=0;i<scan_msg.ranges.size();i++)
             {
-                double proj_speed=speed * cosines[i];
-                double dis = (scan_msg.ranges[i]-car_distances[i]);
+                // double proj_speed = speed * cosines[i];
+                double proj_speed = speed;
+                double dis = (scan_msg.ranges[i]);
+                // double dis = (scan_msg.ranges[i]-car_distances[i]);
                 double ttc = dis/proj_speed;
 
+                // if(i == 540) {
+                //     ROS_INFO("ttc540: %f", ttc);
+                // }
                 double dis_abs = std::abs(dis);
                 double ttc_abs = std::abs(ttc);
                 
@@ -168,9 +180,24 @@ public:
 
                     //publish brake true for each scan
                     brk.data=true;
+                    globalBrake = true;
                     break;
                 }
             }
+        }
+        
+        if(globalBrake == true) {
+            ackermann_msgs::AckermannDriveStamped drive_st_msg;
+            ackermann_msgs::AckermannDrive drive_msg;
+            std_msgs::Header header;
+            drive_msg.speed = 0.0;
+            drive_msg.steering_angle = 0.0;
+            header.stamp = ros::Time::now();
+            drive_st_msg.header = header;
+            // set drive message in drive stamped message
+            drive_st_msg.drive = drive_msg;
+            // publish AckermannDriveStamped message to drive topic
+            brake_pub.publish(drive_st_msg);
         }
 
         brake_bool_pub.publish(brk);

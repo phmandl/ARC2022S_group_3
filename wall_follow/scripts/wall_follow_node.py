@@ -1,14 +1,14 @@
-#!/usr/bin/env python3
-from __future__ import print_function
-from ast import If
+#!/usr/bin/env python
+# from __future__ import print_function
+# from ast import If
 import sys
-import math
-from urllib.parse import MAX_CACHE_SIZE
+# import math
+# from urllib.parse import MAX_CACHE_SIZE
 import numpy as np
 
 #ROS Imports
 import rospy
-from std_msgs.msg import Float64
+# from std_msgs.msg import Float64
 from sensor_msgs.msg import Image, LaserScan
 from ackermann_msgs.msg import AckermannDriveStamped, AckermannDrive
 from dynamic_reconfigure.server import Server
@@ -68,6 +68,7 @@ class WallFollow:
         self.velocity = 0
         self.midRayRange = 0
         self.lookahead = MAX_LOOKAHEAD
+        self.desiredLeftDistance = DESIRED_DISTANCE_LEFT
 
     def pid_control(self):
 
@@ -98,7 +99,7 @@ class WallFollow:
         self.Dtp1 = self.Dt + self.lookahead*np.sin(self.alpha)
 
         # calculate error
-        self.e0 = DESIRED_DISTANCE_LEFT - self.Dtp1
+        self.e0 = self.desiredLeftDistance - self.Dtp1
 
         # Execute PID based on current scan
         self.pid_control()
@@ -145,22 +146,25 @@ class WallFollow:
         self.Ki = config.Ki
         self.Kd = config.Kd
         self.N = config.N
+        self.desiredLeftDistance = config.DistanceLeft
         return config
 
     def calcVelocity(self):
         # CHECK VELOCITY ON LAST STEERING ANGLE
         abs_deg_angle = np.abs(np.rad2deg(self.angle))
-        if (abs_deg_angle <= 10):
-            # Check if distance in front of vehicle is greater than a threshold    
-            if self.midRayRange > 10:
-                self.velocity = 7.0
-            elif 4 <= self.midRayRange <= 10:
-                self.velocity = 5.0
-            else:
-                self.velocity = 2.0
-        else: 
-            inter_velocity = MAX_VELOCITY*np.abs(np.cos(self.angle))
-            self.velocity = np.max([1.0,inter_velocity])
+        # if (abs_deg_angle <= 10):
+        #     # Check if distance in front of vehicle is greater than a threshold    
+        #     if self.midRayRange > 10:
+        #         self.velocity = 7.0
+        #     elif 4 <= self.midRayRange <= 10:
+        #         self.velocity = 5.0
+        #     else:
+        #         self.velocity = 2.0
+        # else: 
+        #     inter_velocity = MAX_VELOCITY*np.abs(np.cos(self.angle))
+        #     self.velocity = np.max([1.0,inter_velocity])
+
+        self.velocity = 0.5
 
         # if (abs_deg_angle <= 10):
         #     # Check if distance in front of vehicle is greater than a threshold    
