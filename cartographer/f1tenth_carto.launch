@@ -24,7 +24,7 @@
   <node name="cartographer_node" pkg="cartographer_ros"
       type="cartographer_node" args="
           -configuration_directory $(find cartographer_ros)/configuration_files
-          -configuration_basename my_robot.lua"
+          -configuration_basename f1tenth.lua"
       output="screen">
     <remap from="laser" to="horizontal_laser_2d" />
    
