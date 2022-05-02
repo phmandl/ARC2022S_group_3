@@ -1,0 +1,25 @@
+custom files
+
+Place racecar.urdf in ~/catkin_ws/catkin_ws/install_isolated/share/cartographer_ros/urdf
+
+Place f1tenth_carto.launch in ~/catkin_ws/catkin_ws/install_isolated/share/cartographer_ros/launch
+
+Place f1tenth.lua in ~/catkin_ws/catkin_ws/install_isolated/share/cartographer_ros/configuration_files
+
+online run
+
+remove rviz node from f1tenth_simulator simulator.launch as rviz is launched in cartographer.
+remap cartographer_occupancy_grid_node map publish to map_carto to avoid conflict with existing map, in f1tenth_carto.launch.
+
+modify TRAJECTORY_BUILDER_2D.submaps.num_range_data and POSE_GRAPH.optimize_every_n_nodes to suit the map.
+
+run cartographer_ros f1tenth_carto.launch
+run wall_follow wall_follow.launch
+
+save the map
+rosrun map_server map_saver -f mapname map:=/map_carto
+
+bag file run
+rosbag play -r .5 ~/bagname.bag
+reduced speed to .5 to get better result
+

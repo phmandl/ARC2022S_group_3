@@ -27,7 +27,7 @@ options = {
   use_pose_extrapolator = true,
   use_odometry = true,
   use_nav_sat = false,
-  use_landmarks = false,
+  use_landmarks = true,
   num_laser_scans = 1,
   num_multi_echo_laser_scans = 0,
   num_subdivisions_per_laser_scan = 1,
@@ -44,7 +44,35 @@ options = {
 }
 
 MAP_BUILDER.use_trajectory_builder_2d = true
-TRAJECTORY_BUILDER_2D.num_accumulated_range_data = 10
+TRAJECTORY_BUILDER_2D.num_accumulated_range_data = 1                                        --default=1
 TRAJECTORY_BUILDER_2D.use_imu_data = false
+
+TRAJECTORY_BUILDER_2D.voxel_filter_size=0.025                                               --default=0.025
+TRAJECTORY_BUILDER_2D.adaptive_voxel_filter.max_length=.5                                   --default=.5 
+TRAJECTORY_BUILDER_2D.adaptive_voxel_filter.min_num_points=200                              --default=200
+TRAJECTORY_BUILDER_2D.adaptive_voxel_filter.max_range=50.                                   --default=50
+
+TRAJECTORY_BUILDER_2D.ceres_scan_matcher.ceres_solver_options.use_nonmonotonic_steps=false  --default=false
+TRAJECTORY_BUILDER_2D.ceres_scan_matcher.ceres_solver_options.max_num_iterations=50         --default=20 
+TRAJECTORY_BUILDER_2D.ceres_scan_matcher.ceres_solver_options.num_threads=1                 --default=1
+
+TRAJECTORY_BUILDER_2D.use_online_correlative_scan_matching=true                             --default=false
+TRAJECTORY_BUILDER_2D.real_time_correlative_scan_matcher.linear_search_window=.1             --default=.1
+TRAJECTORY_BUILDER_2D.real_time_correlative_scan_matcher.angular_search_window=math.rad(20.) --default=20
+TRAJECTORY_BUILDER_2D.real_time_correlative_scan_matcher.translation_delta_cost_weight=1e-1  --default=1e-1 
+TRAJECTORY_BUILDER_2D.real_time_correlative_scan_matcher.rotation_delta_cost_weight=1e-1     --default=1e-1
+
+TRAJECTORY_BUILDER_2D.motion_filter.max_time_seconds=.1                                     --default=5  
+TRAJECTORY_BUILDER_2D.motion_filter.max_distance_meters=0.04                                 --default=.2
+TRAJECTORY_BUILDER_2D.motion_filter.max_angle_radians=math.rad(.25)                          --default=1.0
+
+TRAJECTORY_BUILDER_2D.submaps.num_range_data=1000                                           --default=90
+
+TRAJECTORY_BUILDER_2D.submaps.range_data_inserter.probability_grid_range_data_inserter.hit_probability=0.55    --default=0.55
+TRAJECTORY_BUILDER_2D.submaps.range_data_inserter.probability_grid_range_data_inserter.miss_probability=0.49  -- default=0.49
+
+TRAJECTORY_BUILDER_2D.submaps.grid_options_2d.resolution=0.1                                  --default=0.05
+
+POSE_GRAPH.optimize_every_n_nodes=1000                  -- default=90                                              
 
 return options

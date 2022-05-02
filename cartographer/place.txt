@@ -1,5 +1,0 @@
-place racecar.urdf in ~/catkin_ws/catkin_ws/install_isolated/share/cartographer_ros/urdf
-
-place f1tenth_carto.launch in ~/catkin_ws/catkin_ws/install_isolated/share/cartographer_ros/launch
-
-place f1tenth.lua in ~/catkin_ws/catkin_ws/install_isolated/share/cartographer_ros/configuration_files

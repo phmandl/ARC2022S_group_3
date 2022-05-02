@@ -15,9 +15,12 @@
 -->
 
 <launch>
+
+  
+ 	
   <param name="robot_description"
     textfile="$(find cartographer_ros)/urdf/racecar.urdf" />
-
+    
   <node name="robot_state_publisher" pkg="robot_state_publisher"
     type="robot_state_publisher" />
 
@@ -25,11 +28,19 @@
       type="cartographer_node" args="
           -configuration_directory $(find cartographer_ros)/configuration_files
           -configuration_basename f1tenth.lua"
-      output="screen">
-    <remap from="laser" to="horizontal_laser_2d" />
+      output="screen">    
+                 
+   </node>
    
-  </node>
-
-  <node name="cartographer_occupancy_grid_node" pkg="cartographer_ros"
-      type="cartographer_occupancy_grid_node" args="-resolution 0.05" />
+   <node name="cartographer_occupancy_grid_node" pkg="cartographer_ros"
+      type="cartographer_occupancy_grid_node" args="-resolution 0.05" >
+      <remap from="map" to="map_carto" />
+        
+   </node>
+  
+  
+    <node name="rviz" pkg="rviz" type="rviz" required="true"
+      args="-d $(find cartographer_ros)/configuration_files/demo_2d.rviz" />
+ 
+    
 </launch>
