@@ -15,7 +15,7 @@
 
 // add dynamic reconfigure
 #include <dynamic_reconfigure/server.h>
-#include <safety_node1/safety_node1Config.h>
+#include <safety_node1/configureConfig.h>
 
 //using namespace racecar_simulator;
 
@@ -48,8 +48,8 @@ private:
     bool globalBrake = false;
     
     static constexpr double PI = 3.1415;
-    dynamic_reconfigure::Server<safety_node1::safety_node1Config> server;
-    dynamic_reconfigure::Server<safety_node1::safety_node1Config>::CallbackType f;
+    dynamic_reconfigure::Server<safety_node1::configureConfig> server;
+    dynamic_reconfigure::Server<safety_node1::configureConfig>::CallbackType f;
     
 public:
     Safety() {
@@ -114,7 +114,7 @@ public:
         server.setCallback(f);
      }
 
-    void callback(safety_node1::safety_node1Config &config, uint32_t level) {
+    void callback(safety_node1::configureConfig &config, uint32_t level) {
         ROS_INFO("Init TTC-Threshold: %f", 
                     config.ttc_threshold);
         brake_ttc_threshold = config.ttc_threshold;

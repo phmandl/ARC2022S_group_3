@@ -48,8 +48,6 @@
   <exec_depend>sensor_msgs</exec_depend>
   <exec_depend>geometry_msgs</exec_depend>
   <exec_depend>message_runtime</exec_depend>
-  <exec_depend>precompute</exec_depend>
-
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>

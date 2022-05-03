@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # from __future__ import print_function
 # from ast import If
 import sys
@@ -164,13 +164,13 @@ class WallFollow:
         #     inter_velocity = MAX_VELOCITY*np.abs(np.cos(self.angle))
         #     self.velocity = np.max([1.0,inter_velocity])
 
-        self.velocity = 0.5
+        # self.velocity = 0.5
 
-        # if (abs_deg_angle <= 10):
-        #     # Check if distance in front of vehicle is greater than a threshold    
-        #     self.velocity = 3.0
-        # else: 
-        #     self.velocity = 1.5
+        if (abs_deg_angle <= 10):
+            # Check if distance in front of vehicle is greater than a threshold    
+            self.velocity = 3.0
+        else: 
+            self.velocity = 1.5
             
 
 def main(args):
