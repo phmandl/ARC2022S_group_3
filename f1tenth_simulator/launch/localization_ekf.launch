@@ -3,9 +3,9 @@
   <!-- Listen to messages from joysicks -->
   <node pkg="joy" name="joy_node" type="joy_node"/>
 
-    <!-- Launch a map from the maps folder HATTE ICH GELÖSCHT-->
+    <!-- Launch a map from the maps folder HATTE ICH GELÖSCHT
   <arg name="map" default="$(find f1tenth_simulator)/maps/f1_aut_wide.yaml"/>
-  <node pkg="map_server" name="map_server" type="map_server" args="$(arg map)"/> 
+  <node pkg="map_server" name="map_server" type="map_server" args="$(arg map)"/> -->
 
 
   <!-- Launch the racecar model -->
@@ -57,8 +57,8 @@
    <node pkg="tf" type="static_transform_publisher" name="map_to_odom" args="0 0 0.1 0 0 0 1.0 map odom 100" />
     <node pkg="tf" type="static_transform_publisher" name="odom_publisher_map_odom" args="0 0 0 0 0 0 1 map odom 100" />
 
-  <include file="$(find f1tenth_simulator)/launch/pose_ekf.launch"/>
-        <remap from="robot_pose_ekf/odom_combined" to="odom_combined"/>
+  <include file="$(find f1tenth_simulator)/launch/ekf_odom_amcl.launch"/>
+  
 
 
   <!--  <node pkg="rviz" type="rviz" name="rviz"/>  -->

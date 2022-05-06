@@ -1,6 +1,6 @@
 <launch>
  <!-- Launch a map from the maps folder-->
-  <arg name="map_scan" default="$(find f1tenth_simulator)/maps/f1_aut_wide_carto.yaml"/>
+  <arg name="map_scan" default="$(find f1tenth_simulator)/maps/racetrack_carto.yaml"/>
 
   <node pkg="map_server" name="map_server2" type="map_server" args="$(arg map_scan)" respawn="true" />
   <remap from="/map" to ="/map2" /> 
