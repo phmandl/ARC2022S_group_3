@@ -41,7 +41,7 @@ class pure_pursuit:
         map_topic = '/map'
         odom_topic = '/odom'
         path_topic = '/path'
-        wp_vis_pub_topic = '/wp_vis_pub'
+        # wp_vis_pub_topic = '/wp_vis_pub'
         self.r = rospy.Rate(HZ)
         self.proportional_control=0.8
         self.min_lookahead = 0.5
@@ -59,7 +59,7 @@ class pure_pursuit:
         self.odom_sub = rospy.Subscriber(odom_topic, Odometry, self.odom_callback, queue_size=1)
         #self.lidar_sub = rospy.Subscriber(lidarscan_topic, LaserScan, self.lidar_callback, queue_size=1) # optional
         self.drive_pub = rospy.Publisher(drive_topic, AckermannDriveStamped, queue_size=100)
-        self.wp_vis_pub = rospy.Publisher(wp_vis_pub_topic,Marker,  queue_size=1)
+        # self.wp_vis_pub = rospy.Publisher(wp_vis_pub_topic,Marker,  queue_size=1)
         #Publisher for the goal point
         #self.goal_pub = rospy.Publisher('/waypoint/goal', Point, queue_size=1)
 
