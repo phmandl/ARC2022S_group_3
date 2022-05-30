@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+<launch>
+<!-- loads the simulator -->
+<include file="$(find f1tenth_simulator)/launch/simulator.launch"/>
+<node pkg="safety_node2" type="safety_node.py" name="safety_node"/>
+</launch>

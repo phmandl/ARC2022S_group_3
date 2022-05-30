@@ -1,0 +1,7 @@
+[
+{
+  "directory": "/home/apoks/catkin_ws/src/safety_node1/build",
+  "command": "/usr/bin/clang++    -Wall -Wextra -g   -std=gnu++11 -o CMakeFiles/safety_node1.dir/src/safety_node.cpp.o -c /home/apoks/catkin_ws/src/safety_node1/src/safety_node.cpp",
+  "file": "/home/apoks/catkin_ws/src/safety_node1/src/safety_node.cpp"
+}
+]
