@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<launch>
+  <arg name="map_occup" default="$(find pure_pursuit)/maps/occop_map.yaml"/>
+
+        <!-- <include
+                file="$(find safety_node1)/launch/simulator.launch">
+        </include> -->
+        <include file="$(find f1tenth_simulator)/launch/simulator.launch"/>
+
+ <!--
+        <include file="$(find f1tenth_simulator)/launch/map_server.launch"/>
+  <arg name="scan_topic" default="/scan"/> -->
+
+    <!-- Begin the simulator with the parameters from params.yaml -->
+  <node pkg="pure_pursuit" name="planner" type="planner.py" output="screen">
+  </node>
+
+  <!-- Launch the mux node with the parameters from params.yaml -->
+  <node pkg="pure_pursuit" name="pure_pursuit" type="pure_pursuit.py" output="screen">
+  </node>
+
+		 
+		   <!-- Run the map2 server -->
+<!--  <node name="map_occup"
+		pkg="map_server" 
+		type="map_server" 
+		args="$(arg map_occup)"
+		respawn="true"		>
+     <param name= "frame_id" value ="map_occup"/> 
+       <remap from="/map" to="/map_occup" /> 
+  </node>-->
+
+</launch>
