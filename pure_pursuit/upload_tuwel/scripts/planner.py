@@ -24,8 +24,6 @@ from geometry_msgs.msg import PoseStamped
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
 
 
-from std_msgs.msg import Header, ColorRGBA
-from geometry_msgs.msg import Point, Point32
 from visualization_msgs.msg import Marker
 from tf import transformations # rotation_matrix(), concatenate_matrices()
 
@@ -52,7 +50,7 @@ class planner:
 
          # rosrate
         self.r = rospy.Rate(HZ)
-        self.n_safety=9
+        self.n_safety=8
         self.map_binary= np.zeros( (2000, 2000) , dtype=np.int8)  
         self.driveable= np.ones( (2000, 2000) , dtype=np.int64) 
         self.driveable_ps= np.ones( (2000, 2000) , dtype=np.int64) 
@@ -70,7 +68,7 @@ class planner:
 
 
     def floodfill_stack(self,matrix,x,y,n_safety):     
-        self.markerArray = MarkerArray()
+        #self.markerArray = MarkerArray()
         selected_pixel_sign = matrix[x,y]
         stack=[(999,999)]
 

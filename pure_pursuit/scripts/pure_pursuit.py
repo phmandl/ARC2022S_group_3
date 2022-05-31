@@ -53,7 +53,7 @@ class pure_pursuit:
         self.lookahead_angle=0.2 #0.2018
         self.speed_factor=1.00
 
-        self.lookahead_method='angle'
+        self.lookahead_method='none'
 
         self.path_pub = rospy.Subscriber(path_topic,Path,self.traj_callback,queue_size=1) # ... todo
         self.odom_sub = rospy.Subscriber(odom_topic, Odometry, self.odom_callback, queue_size=1)
