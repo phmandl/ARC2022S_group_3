@@ -1,6 +1,6 @@
 image: test.png
 resolution: 0.050000
-origin: [-50, -90, 0] #start point for rectangle left [-50,-77,0]; start point for rectangle left [-50,-85,0]; start point square [-50,-50,0]
+origin: [-50, -50, 0]
 negate: 0
 occupied_thresh: 0.65
 free_thresh: 0.2

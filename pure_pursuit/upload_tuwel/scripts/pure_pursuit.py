@@ -41,7 +41,7 @@ class pure_pursuit:
         map_topic = '/map'
         odom_topic = '/odom'
         path_topic = '/path'
-        # wp_vis_pub_topic = '/wp_vis_pub'
+        wp_vis_pub_topic = '/wp_vis_pub'
         self.r = rospy.Rate(HZ)
         self.proportional_control=0.8
         self.min_lookahead = 0.5
@@ -53,13 +53,13 @@ class pure_pursuit:
         self.lookahead_angle=0.2 #0.2018
         self.speed_factor=1.00
 
-        self.lookahead_method='none'
+        self.lookahead_method='angle'
 
         self.path_pub = rospy.Subscriber(path_topic,Path,self.traj_callback,queue_size=1) # ... todo
         self.odom_sub = rospy.Subscriber(odom_topic, Odometry, self.odom_callback, queue_size=1)
         #self.lidar_sub = rospy.Subscriber(lidarscan_topic, LaserScan, self.lidar_callback, queue_size=1) # optional
         self.drive_pub = rospy.Publisher(drive_topic, AckermannDriveStamped, queue_size=100)
-        # self.wp_vis_pub = rospy.Publisher(wp_vis_pub_topic,Marker,  queue_size=1)
+        self.wp_vis_pub = rospy.Publisher(wp_vis_pub_topic,Marker,  queue_size=1)
         #Publisher for the goal point
         #self.goal_pub = rospy.Publisher('/waypoint/goal', Point, queue_size=1)
 
@@ -268,7 +268,7 @@ class pure_pursuit:
             # Publish drive message, don't forget to limit the steering angle.
             #self.publish_drive_msg(desired_angle, self.vel[cur_idx]) self.VELOCITY
             self.publish_drive_msg(self.angle, desired_speed)
-           # self.publish_waypoint_vis_msg(x_w, y_w)    
+            # self.publish_waypoint_vis_msg(x_w, y_w)    
 
 
     def compute_speed(self,angle):

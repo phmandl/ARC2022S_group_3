@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>safety_node2</name>
+  <name>pure_pursuit</name>
   <version>0.0.0</version>
-  <description>The safety_node2 package</description>
+  <description>The pure_pursuit package</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag -->
   <!-- Example:  -->
@@ -19,7 +19,7 @@
   <!-- Url tags are optional, but multiple are allowed, one per tag -->
   <!-- Optional attribute type can be: website, bugtracker, or repository -->
   <!-- Example: -->
-  <!-- <url type="website">http://wiki.ros.org/safety_node2</url> -->
+  <!-- <url type="website">http://wiki.ros.org/pure_pursuit</url> -->
 
 
   <!-- Author tags are optional, multiple are allowed, one per tag -->
@@ -49,14 +49,26 @@
   <!-- Use doc_depend for packages you need only for building documentation: -->
   <!--   <doc_depend>doxygen</doc_depend> -->
   <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>ackermann_msgs</build_depend>
+  <build_depend>dynamic_reconfigure</build_depend>
+  <build_depend>nav_msgs</build_depend>
   <build_depend>roscpp</build_depend>
   <build_depend>rospy</build_depend>
+  <build_depend>sensor_msgs</build_depend>
   <build_depend>std_msgs</build_depend>
+  <build_export_depend>ackermann_msgs</build_export_depend>
+  <build_export_depend>dynamic_reconfigure</build_export_depend>
+  <build_export_depend>nav_msgs</build_export_depend>
   <build_export_depend>roscpp</build_export_depend>
   <build_export_depend>rospy</build_export_depend>
+  <build_export_depend>sensor_msgs</build_export_depend>
   <build_export_depend>std_msgs</build_export_depend>
+  <exec_depend>ackermann_msgs</exec_depend>
+  <exec_depend>dynamic_reconfigure</exec_depend>
+  <exec_depend>nav_msgs</exec_depend>
   <exec_depend>roscpp</exec_depend>
   <exec_depend>rospy</exec_depend>
+  <exec_depend>sensor_msgs</exec_depend>
   <exec_depend>std_msgs</exec_depend>
 
 
