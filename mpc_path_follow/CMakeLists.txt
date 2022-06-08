@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(safety_node2)
+project(mpc_path_follow)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
@@ -12,6 +12,13 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   std_msgs
 )
+
+# EIGEN STUFF
+find_package(Eigen3 3.3 REQUIRED NO_MODULE)
+
+# Find OSQP library and headers
+find_package(OsqpEigen REQUIRED)
+
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -70,7 +77,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## Generate added messages and services with any dependencies listed here
 # generate_messages(
 #   DEPENDENCIES
-#   std_msgs
+#   std_msgs  # Or other packages containing msgs
 # )
 
 ################################################
@@ -104,8 +111,8 @@ find_package(catkin REQUIRED COMPONENTS
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
 #  INCLUDE_DIRS include
-#  LIBRARIES safety_node2
-#  CATKIN_DEPENDS roscpp rospy std_msgs
+#  LIBRARIES mpc_path_follow
+#  CATKIN_DEPENDS roscpp rospy stds_msg
 #  DEPENDS system_lib
 )
 
@@ -122,7 +129,7 @@ include_directories(
 
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
-#   src/${PROJECT_NAME}/safety_node2.cpp
+#   src/${PROJECT_NAME}/mpc_path_follow.cpp
 # )
 
 ## Add cmake target dependencies of the library
@@ -133,7 +140,7 @@ include_directories(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-# add_executable(${PROJECT_NAME}_node src/safety_node2_node.cpp)
+add_executable(${PROJECT_NAME}_node src/mpc_path_follow_node.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -146,9 +153,12 @@ include_directories(
 # add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
-# target_link_libraries(${PROJECT_NAME}_node
-#   ${catkin_LIBRARIES}
-# )
+target_link_libraries(${PROJECT_NAME}_node
+  ${catkin_LIBRARIES}
+)
+
+target_link_libraries(${PROJECT_NAME}_node OsqpEigen::OsqpEigen)
+target_link_libraries(${PROJECT_NAME}_node Eigen3::Eigen)
 
 #############
 ## Install ##
@@ -197,7 +207,7 @@ include_directories(
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_safety_node2.cpp)
+# catkin_add_gtest(${PROJECT_NAME}-test test/test_mpc_path_follow.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()
