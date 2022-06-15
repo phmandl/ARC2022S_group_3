@@ -48,17 +48,17 @@ struct params
 
     // MPC STUFF
     double Ts = 0.05; //s - sampling Time
-    double Tl = 1; // s - look-ahead time
+    double Tl = 0.5; // s - look-ahead time
     const int Np = Tl/Ts;
     int Nc = Np;
     int variables = Nc*nu;
 
     // Weighting
-    double R1 = 1e4; // weighting: delta --> don't use steering too much
-    double R2 = 2; // weighting: ax --> don't accel to much
+    double R1 = 5; // weighting: delta --> don't use steering too much
+    double R2 = 1; // weighting: ax --> don't accel to much
     double Q1 = 1; // V-ref weight --> track vref
-    double Q2 = 1; // e1 weight --> reduce lateral error
-    double Q3 = 0; // e2 weight --> reduce heading error 1e3
+    double Q2 = 2; // e1 weight --> reduce lateral error
+    double Q3 = 1; // e2 weight --> reduce heading error 1e3
 
     // Constraints
     double axMin = -3; // m/s^2
@@ -218,6 +218,7 @@ public:
 
         // Get current xk: calculate lateral error and heading error
         xk << VxDot, Vx, Vy, psiDot, e1, e2;
+        // xk << 0, Vx, 0, 0, e1, e2;
         
         // Check for zero velocity
         double v_lin = 0.0;
@@ -273,6 +274,7 @@ public:
     void odom_callback(const nav_msgs::Odometry::ConstPtr &odom_msg) {
         // Kalamnfilter hierher --> um auch Vy und psiDot richtig zu schätzen!
         Vx = odom_msg->twist.twist.linear.x;
+        
         Vy = odom_msg->twist.twist.linear.y; // Ist empty ...
         psiDot = odom_msg->twist.twist.angular.z;
         xpos = odom_msg->pose.pose.position.x;
@@ -285,6 +287,13 @@ public:
 
         tf::Matrix3x3 m(q);
         m.getRPY(roll, pitch, yaw);
+        yaw = wrap_to_pi(yaw);
+
+        // ROS_INFO_STREAM(Vy << " " << VxDot << " ");
+    }
+
+    double wrap_to_pi(double val) {
+        return std::fmod(val + M_PI, 2*M_PI) - M_PI;
     }
 
     void imu_callback(const sensor_msgs::Imu::ConstPtr &imu_msg) {
@@ -482,7 +491,7 @@ int main(int argc, char ** argv){
     ROS_INFO_STREAM("MPC: STARTING CONTROLLER!");
 
     // Make ROS-Rate-Update-Rate
-    ros::Rate loop_rate(1/controller.data.tau);
+    ros::Rate loop_rate(1/controller.data.Ts);
 
     // START ROS-LOOP
     while (ros::ok())

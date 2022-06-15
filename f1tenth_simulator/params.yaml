@@ -14,6 +14,7 @@ max_accel: 7.51 # meters/second^2
 max_decel: 8.26 # meters/second^2
 max_steering_vel: 3.2 # radians/second
 friction_coeff: 0.280991736 # measured on floor of informatik-hoersaal
+# friction_coeff: 1.0 # measured on floor of informatik-hoersaal
 height_cg: 0.074 # m (roughly measured to be 3.25 in)
 l_cg2rear: 0.17145 # m (decently measured to be 6.75 in)
 l_cg2front: 0.15875 # m (decently measured to be 6.25 in)

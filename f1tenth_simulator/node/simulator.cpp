@@ -702,7 +702,8 @@ public:
             odom.pose.pose.orientation.y = quat.y();
             odom.pose.pose.orientation.z = quat.z();
             odom.pose.pose.orientation.w = quat.w();
-            odom.twist.twist.linear.x = state.velocity;
+            odom.twist.twist.linear.x = state.velocity*std::cos(state.slip_angle);
+            odom.twist.twist.linear.y = state.velocity*std::sin(state.slip_angle);
             odom.twist.twist.angular.z = state.angular_velocity;
             odom_pub.publish(odom);
         }
@@ -713,8 +714,7 @@ public:
             sensor_msgs::Imu imu;
             imu.header.stamp = timestamp;
             imu.header.frame_id = map_frame;
-
-
+            imu.linear_acceleration.x = accel; // NEW LINE
             imu_pub.publish(imu);
         }
 

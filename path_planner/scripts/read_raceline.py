@@ -24,7 +24,7 @@ class planner:
         odom_topic = '/odom'
 
         # rosrate
-        self.Hz = 100
+        self.Hz = 200
         self.r = rospy.Rate(self.Hz)
 
         # Publisher
@@ -39,14 +39,14 @@ class planner:
         self.filename = os.path.join(self.dirname, '../waypoints/f1_wide_log_minCurv.csv')
         
         # MPC Stuffy
-        self.Tl = 1.0 # Endtime
+        self.Tl = 0.5 # Endtime
         self.Ts = 0.05 # MPC sample time
         self.Np = int(self.Tl/self.Ts) # Prediction-Horizon
         self.horizon = np.linspace(0,self.Tl - self.Ts,self.Np)
         self.index_position = 0 # Vehicle position on path
 
         # PATHY stuffy
-        self.ds = 0.05 # bspline interpolation on 5cm grid
+        self.ds = 0.01 # bspline interpolation on 5cm grid
         self.plot_flag = False
         self.route = []
         self.s_int = []
@@ -84,9 +84,9 @@ class planner:
         path_s = self.route[:,0]
         path_x = self.route[:,1]
         path_y = self.route[:,2]
-        path_yaw = self.route[:,3] + np.deg2rad(90) # rotate by 90 degrress --> TUM defines zero wiht y-axis not x-axis
+        path_yaw = np.unwrap(self.route[:,3] + np.deg2rad(90)) # rotate by 90 degrress --> TUM defines zero wiht y-axis not x-axis
         path_kappa = self.route[:,4]
-        path_vx = self.route[:,5]/2
+        path_vx = self.route[:,5]*1.0
         path_ax = self.route[:,6]
 
         # Interpolate path
@@ -169,8 +169,7 @@ class planner:
 
         # Calc errors
         e1 = np.sign(cross_product[2])*dist[self.index_position] # approximation --> lateral error is only dy
-        e2 = self.yaw - yaw_mpc[0] 
-        print(e1)
+        e2 = self.wrap_to_pi(self.yaw - yaw_mpc[0])
 
         # Publish
         msg = Path()
@@ -196,6 +195,9 @@ class planner:
 
         self.mpc_path_pub.publish(msg)
 
+    def wrap_to_pi(self,val):
+        return (val + np.pi) % (2 * np.pi) - np.pi
+
     def odom_callback(self,msg):
         self.x_pos = msg.pose.pose.position.x
         self.y_pos = msg.pose.pose.position.y
@@ -208,7 +210,7 @@ class planner:
         rot_z = msg.pose.pose.orientation.z
         rot_w = msg.pose.pose.orientation.w
         euler_angles = euler_from_quaternion([rot_x,rot_y,rot_z,rot_w])
-        self.yaw = euler_angles[2]
+        self.yaw = self.wrap_to_pi(euler_angles[2])
 
     def bspline_interpolation(self,s_old,s_new,data,plot_flag):
         tck = interpolate.splrep(s_old, data, s=0)
