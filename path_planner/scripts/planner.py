@@ -292,6 +292,43 @@ class planner:
         #self.skeleton_pt=self.skeleton_binary *0.05-50
         #io.imsave('~/catkin_ws/src/pure_pursuit/maps/skel_test.png', img_as_ubyte(self.skeleton_binary), check_contrast=False) # save image, just to show the content of the 2D array for debug purposes
 
+    def calc_curvature(self, s, x, y, yaw, pitch):
+        dx_ds = np.gradient(x,s)
+        dy_ds = np.gradient(y,s)
+
+        # Second order gradient
+        d2x_ds2 = np.gradient(dx_ds,s)
+        d2y_ds2 = np.gradient(dy_ds,s)
+
+        # Curvature
+        curvature = (dx_ds * d2y_ds2 - d2x_ds2 * dy_ds) / (dx_ds * dx_ds + dy_ds * dy_ds)**1.5
+
+        # Calculate reference velocity
+        v_ref = np.zeros(len(curvature))
+        for idx, kappa in enumerate(curvature):
+            v_ref[idx] = np.sqrt(9.81*0.1/np.abs(kappa))
+            v_ref[idx] = np.min((v_ref[idx], 3))
+        
+        # DEBUG
+        print(curvature)
+        print(x)
+        print(y)
+        print(yaw)
+
+        # Interpolate everything!
+        dx = 0.05
+        s_big = np.arange(s[0],s[-1],dx)
+        x_big = np.interp(s_big,s,x)
+        y_big = np.interp(s_big,s,y)
+        curv_big = np.interp(s_big,s,curvature)
+        vref_big = np.interp(s_big,s,v_ref)
+        yaw_big = np.interp(s_big,s,yaw)
+        pitch_big = np.interp(s_big,s,pitch)
+
+        return s_big,x_big,y_big,curv_big,vref_big,yaw_big,pitch_big
+
+
+
 def heuristic(a, b):
     return np.sqrt((b[0] - a[0]) ** 2 + (b[1] - a[1]) ** 2)
 
@@ -394,7 +431,7 @@ def main(args):
                 rospy.sleep(3) # Sleeps for 1 sec
                 route=bspline(rfgs.route_pre,n=1000,degree=3,periodic=True) 
                 rfgs.publish_waypoints(route)
-            rospy.sleep(4) # Sleeps for 1 sec
+            rospy.sleep(1) # Sleeps for 1 sec
             # Publish a path using a list of ROS Point Msgs
             print('fertig')
             fertig=True

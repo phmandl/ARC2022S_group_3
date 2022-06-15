@@ -1,7 +1,8 @@
 <?xml version="1.0"?>
 <launch>
   <!-- <include file="$(find pure_pursuit)/launch/simulator.launch"/> -->
-  <include file="$(find path_planner)/launch/planner.launch"/>
+  <!-- <include file="$(find path_planner)/launch/planner.launch"/> -->
+  <include file="$(find path_planner)/launch/read_raceline.launch"/>
 
   <include file="$(find f1tenth_simulator)/launch/simulator.launch"/>
 

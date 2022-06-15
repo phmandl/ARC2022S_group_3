@@ -47,18 +47,18 @@ struct params
     int nz = 1;
 
     // MPC STUFF
-    double Ts = 0.1; //s - sampling Time
-    double Tl = 3; // s - look-ahead time
+    double Ts = 0.05; //s - sampling Time
+    double Tl = 1; // s - look-ahead time
     const int Np = Tl/Ts;
     int Nc = Np;
     int variables = Nc*nu;
 
     // Weighting
-    double R1 = 1; // weighting: delta --> don't use steering too much
+    double R1 = 1e4; // weighting: delta --> don't use steering too much
     double R2 = 2; // weighting: ax --> don't accel to much
-    double Q1 = 500; // V-ref weight --> track vref
-    double Q2 = 50; // e1 weight --> reduce lateral error
-    double Q3 = 1e3; // e2 weight --> reduce heading error
+    double Q1 = 1; // V-ref weight --> track vref
+    double Q2 = 1; // e1 weight --> reduce lateral error
+    double Q3 = 0; // e2 weight --> reduce heading error 1e3
 
     // Constraints
     double axMin = -3; // m/s^2
@@ -98,10 +98,6 @@ private:
 
     // Subscribers for optimised path
     ros::Subscriber path_sub;
-    ros::Subscriber speed_sub;
-    ros::Subscriber yaw_sub;
-    ros::Subscriber curv_sub;
-    ros::Subscriber len_sub;
 
     // Publisher
     ros::Publisher drive_pub;
@@ -117,6 +113,7 @@ private:
     double e1;
     double e2;
 
+    // Imu Stuff
     double xpos;
     double ypos;
     double roll;
@@ -131,24 +128,16 @@ private:
     OsqpEigen::Solver solver;
     VectorXd QPSolution;  // controller input and QPSolution vector
     VectorXd xk;
-    VectorXd v_ref;
-    VectorXd curvature;
 
     // Drive Topic
     ackermann_msgs::AckermannDriveStamped drive_msg;
 
     // PATH DATA
-    VectorXd curv_tot;
-    VectorXd len_tot;
-    VectorXd yaw_tot;
-    VectorXd vref_tot;
-    VectorXd xpos_tot;
-    VectorXd ypos_tot;
-    int current_path_int;
-    int nrWayPoints;
-    VectorXd time_vec;
-    VectorXd curv_mpc;
+    VectorXd xpos_mpc;
+    VectorXd ypos_mpc;
     VectorXd vref_mpc;
+    VectorXd curv_mpc;
+    VectorXd ax_mpc;
 
 public:
 
@@ -172,20 +161,19 @@ public:
         roll = 0.0;
         pitch = 0.0;
         yaw = 0.0;
-        nrWayPoints = 0;
-        time_vec = VectorXd::LinSpaced(data.Np, 0.0, data.Tl - data.Ts);
-        time_vec = VectorXd::Zero(data.Np);
-        curv_mpc = VectorXd::Zero(data.Np);
-        vref_mpc = VectorXd::Zero(data.Np);
+        
+        // MPC STUFF
+        xk = VectorXd::Zero(data.nx,1);
+        xpos_mpc = VectorXd::Zero(data.Np,1);
+        ypos_mpc = VectorXd::Zero(data.Np,1);
+        vref_mpc = VectorXd::Zero(data.Np,1);
+        curv_mpc = VectorXd::Zero(data.Np,1);
+        ax_mpc = VectorXd::Zero(data.Np,1);
 
         // Make Subscribers
         odom_sub = n.subscribe("odom",1,&mpcPathFollow::odom_callback,this);
         imu_sub = n.subscribe("imu",1,&mpcPathFollow::imu_callback,this);
-        path_sub = n.subscribe("path",1,&mpcPathFollow::path_callback,this);
-        speed_sub = n.subscribe("path_speed",1,&mpcPathFollow::path_vref,this);
-        curv_sub = n.subscribe("path_curv",1,&mpcPathFollow::path_curv,this);
-        len_sub = n.subscribe("path_len",1,&mpcPathFollow::path_len,this);
-        yaw_sub = n.subscribe("path_yaw",1,&mpcPathFollow::path_yaw,this);
+        path_sub = n.subscribe("mpc_path",1,&mpcPathFollow::path_callback,this);
 
         // Make Publishers
         drive_pub = n.advertise<ackermann_msgs::AckermannDriveStamped>("nav", 1);
@@ -195,12 +183,6 @@ public:
         drive_msg.drive.steering_angle = 0.0;
         drive_msg.drive.acceleration = 0.0;
 
-        // MPC STUFF
-        xk = VectorXd::Zero(data.nx,1);
-        v_ref = VectorXd::Zero(data.Np,1);
-        curvature = VectorXd::Zero(data.Np,1);
-        xk << 0, 0, 0, 0, 0, 0.6568; // current state; wild guess for first one
-
         // System-Matrix
         cont = setDynamicsMatrices(data);
 
@@ -208,7 +190,7 @@ public:
         dis = setDiscreteSystem(cont,data,0.1);
 
         // Build Hessian, f, constraint matrix etc.
-        qp_matrizen = setHessianGradient(dis,data,xk,curvature,v_ref);
+        qp_matrizen = setHessianGradient(dis,data,xk,curv_mpc,vref_mpc);
 
         // Make constraints
         cons = setLowerUpperBounds(data);
@@ -233,12 +215,6 @@ public:
         // What is needed: xk, velocity (for linearisation), curvature (for path tracking), vref (vector)
         // Size of stuff:  6,  1, Np, Np
         // STATE: VxDot, Vx, Vy, psiDot, e1, e2
-
-        // Get for the lookahead window the v_ref, curvature, e1 and e2
-        // e1 ... lateral error to path
-        // e2 ... yaw-error
-        find_closest_point_and_error(); // gives e1/e2 and closest point index
-        build_mpc_vectors(); // buildes vref_mpc and curv_mpc
 
         // Get current xk: calculate lateral error and heading error
         xk << VxDot, Vx, Vy, psiDot, e1, e2;
@@ -279,43 +255,19 @@ public:
     }
 
     void path_callback(const nav_msgs::Path::ConstPtr &path_msg) {
-        nrWayPoints = path_msg->poses.size();
-        ROS_INFO("MPC: Nr. of Waypoints received %d", nrWayPoints);
 
-        // Init it
-        xpos_tot = VectorXd::Zero(nrWayPoints);
-        ypos_tot = VectorXd::Zero(nrWayPoints);
+        // Zero pose carrys the error
+        e1 = path_msg->poses[0].pose.orientation.z;
+        e2 = path_msg->poses[0].pose.orientation.w;
 
-        for (int i = 0; i < nrWayPoints; i++) {
-            xpos_tot[i] = path_msg->poses[i].pose.position.x;
-            ypos_tot[i] = path_msg->poses[i].pose.position.y;
+        for (int i = 0; i < data.Np; i++) {
+            xpos_mpc[i] = path_msg->poses[i].pose.position.x;
+            ypos_mpc[i] = path_msg->poses[i].pose.position.y;
+            vref_mpc[i] = path_msg->poses[i].pose.position.z;
+            ax_mpc[i] = path_msg->poses[i].pose.orientation.x;
+            curv_mpc[i] = path_msg->poses[i].pose.orientation.y;
         }
 
-    }
-
-    void path_vref(const std_msgs::Float64MultiArray::ConstPtr &vref_msg) {
-        std::vector<double> std_vector = vref_msg->data;
-        vref_tot = VectorXd::Map(std_vector.data(), std_vector.size());
-
-        // ROS_INFO_STREAM(vref_msg->data[0]);
-        // for (float i: vref_msg->data) {
-        //     std::cout << i << ' ';
-        // }
-    }
-
-    void path_curv(const std_msgs::Float64MultiArray::ConstPtr &curv_msg) {
-        std::vector<double> std_vector = curv_msg->data;
-        curv_tot = VectorXd::Map(std_vector.data(), std_vector.size());
-    }
-
-    void path_len(const std_msgs::Float64MultiArray::ConstPtr &len_msg) {
-        std::vector<double> std_vector = len_msg->data;
-        len_tot = VectorXd::Map(std_vector.data(), std_vector.size());
-    }
-
-    void path_yaw(const std_msgs::Float64MultiArray::ConstPtr &yaw_msg) {
-        std::vector<double> std_vector = yaw_msg->data;
-        yaw_tot = VectorXd::Map(std_vector.data(), std_vector.size());  
     }
 
     void odom_callback(const nav_msgs::Odometry::ConstPtr &odom_msg) {
@@ -340,112 +292,6 @@ public:
         VxDot = imu_msg->linear_acceleration.x;
         // psiDot = imu_msg->angular_velocity.z;
     }
-
-    void find_closest_point_and_error() {
-
-        if (nrWayPoints > 0) {
-            // Calculate euclidian distances to current vehicle position
-            VectorXd distances(nrWayPoints);
-            for (int i = 0; i < nrWayPoints; i++) {
-                distances[i] = std::sqrt( std::pow( xpos - xpos_tot[i],2) + std::pow( ypos - ypos_tot[i],2)  );
-            }
-
-            // find minimum value and index
-            e1 = distances.minCoeff(&current_path_int);
-            // ROS_INFO_STREAM(e1);
-
-            // calculate error e2
-            e2 = yaw_tot(current_path_int) - yaw;
-            // ROS_INFO("Yaw-Error: %f", e2*180/M_PI);
-
-            // ROS_INFO_STREAM(current_path_int);
-        }
-
-    }
-
-    void build_mpc_vectors() {
-
-        if (nrWayPoints > 0) {
-            // Calculate time forward!
-            // ----------------------------------------------------------------------
-            double dx = 0.05;
-
-            // Find section of interest
-            int final_time_index = 0;
-            int counter = 0;
-            double dt = 0;
-            int eval_index = 0;
-            VectorXd time_sec_of_interest;
-            std::vector<double> times;
-
-            // Init value
-            times.push_back(0.0);
-            while(true) {
-                
-                // Check if we have a overflow --> close to end of trajectory
-                if (current_path_int + counter >= nrWayPoints) {
-                    // We have an overflow
-                    eval_index = counter - (nrWayPoints - current_path_int);
-                } else { // no overflow
-                    eval_index = counter + current_path_int;
-                }
-
-                dt = dx/vref_tot(eval_index);
-                times.push_back(times[counter] + dt);
-
-                // Break condtions
-                if (times[counter + 1] > data.Tl) {
-                    break;
-                }
-
-                if (counter > 1000) {
-                    ROS_INFO_STREAM("MPC: Vectors to short --> ERROR in MPC!!!! FINAL TIME TO LONG!!");
-                }
-
-                counter++;
-            }
-
-            // // Make from std::vector to Eigen::VectorXd --> for OSQP
-            time_sec_of_interest = VectorXd::Map(times.data(), times.size());
-            // ROS_INFO_STREAM(time_sec_of_interest);
-
-            // FIND INDEXES WHICH ARE CLOSEST TO OUR DESIRED ONES
-            // DESIRED: time_vec
-            // GIVEN: time_sec_of_interest
-            // WANT: INDEXES OF time_sec_of_interest closest to time_vec
-            std::vector<int> index_of_int;
-            int index;
-            for(int i = 0; i < time_vec.size(); i++) {
-                double timeOFint = time_vec[i];
-
-                // Shift vector to zero for desired timestamp
-                VectorXd shifted = time_sec_of_interest - timeOFint*VectorXd::Ones(time_sec_of_interest.size());
-                shifted = shifted.array().abs();                  // make abs
-
-                // Get minimum and push back
-                double path_point = shifted.minCoeff(&index);     // find minimum --> closest
-                index_of_int.push_back(index + current_path_int); // add starting index to the array
-            }
-
-            // NOW FOUND INDEXES --> BUILD MPC_VECTORS
-            vref_mpc = vref_tot(index_of_int);
-            curv_mpc = curv_tot(index_of_int);
-
-        } 
-    }
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

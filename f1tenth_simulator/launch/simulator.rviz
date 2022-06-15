@@ -4,8 +4,6 @@ Panels:
     Name: Displays
     Property Tree Widget:
       Expanded:
-        - /Global Options1
-        - /Status1
         - /Path1
       Splitter Ratio: 0.5
     Tree Height: 495
@@ -163,13 +161,37 @@ Visualization Manager:
     - Alpha: 1
       Buffer Length: 1
       Class: rviz/Path
+      Color: 255; 0; 0
+      Enabled: true
+      Head Diameter: 0.30000001192092896
+      Head Length: 0.20000000298023224
+      Length: 0.30000001192092896
+      Line Style: Billboards
+      Line Width: 0.20000000298023224
+      Name: Path
+      Offset:
+        X: 0
+        Y: 0
+        Z: 0
+      Pose Color: 255; 85; 255
+      Pose Style: None
+      Queue Size: 10
+      Radius: 0.029999999329447746
+      Shaft Diameter: 0.10000000149011612
+      Shaft Length: 0.10000000149011612
+      Topic: /mpc_path
+      Unreliable: false
+      Value: true
+    - Alpha: 1
+      Buffer Length: 1
+      Class: rviz/Path
       Color: 25; 255; 0
       Enabled: true
       Head Diameter: 0.30000001192092896
       Head Length: 0.20000000298023224
       Length: 0.30000001192092896
       Line Style: Billboards
-      Line Width: 0.029999999329447746
+      Line Width: 0.10000000149011612
       Name: Path
       Offset:
         X: 0
@@ -280,7 +302,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 40.232322692871094
+      Distance: 13.013031005859375
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -288,17 +310,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: 4.767050266265869
-        Y: -7.506002426147461
-        Z: 0.004342546220868826
+        X: 4.812078475952148
+        Y: -5.3389105796813965
+        Z: -1.9924826622009277
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.5697963237762451
+      Pitch: 0.5347973704338074
       Target Frame: <Fixed Frame>
-      Yaw: 3.1635732650756836
+      Yaw: 2.5435705184936523
     Saved: ~
 Window Geometry:
   Displays:
@@ -318,5 +340,5 @@ Window Geometry:
   Views:
     collapsed: true
   Width: 1536
-  X: 1318
-  Y: 508
+  X: 1487
+  Y: 606
