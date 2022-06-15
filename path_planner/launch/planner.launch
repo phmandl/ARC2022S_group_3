@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<launch>
+
+  <!-- Begin the simulator with the parameters from params.yaml -->
+  <node pkg="path_planner" name="planner" type="planner.py" output="screen">
+  </node>
+
+</launch>
