@@ -7,8 +7,14 @@
 // ROS MSGS
 #include "std_msgs/String.h"
 #include <nav_msgs/Odometry.h>
+#include <sensor_msgs/Imu.h>
 #include <sensor_msgs/LaserScan.h>
 #include <ackermann_msgs/AckermannDriveStamped.h>
+#include <std_msgs/Float64MultiArray.h>
+#include <nav_msgs/Path.h>
+
+// TF
+#include <tf/transform_datatypes.h>
 
 // MPC
 #include <Eigen/Dense>
@@ -25,13 +31,14 @@ using std::chrono::milliseconds;
 
 struct params  
 {  
-    double tau = 0.5; // s - drive train time constant
-    double C_alpha_f = 19000; // Np/rad - cornering stiffnes front
-    double C_alpha_r = 33000; // Np/rad - cornering stiffnes rear
-    double m = 1575; // kg
-    double L_f = 1.2; // m - CoM to front
-    double L_r = 1.6; // m - CoM to rear
-    double Iz = 2875; // Nms^2 - yaw moment
+    // PARAMETERS FROM PARAMS.YAML
+    double tau = 0.1; // s - drive train time constant
+    double C_alpha_f = 4.718; // Np/rad - cornering stiffnes front
+    double C_alpha_r = 5.4562; // Np/rad - cornering stiffnes rear
+    double m = 3.47; // kg
+    double L_f = 0.15875; // m - CoM to front
+    double L_r = 0.17145; // m - CoM to rear
+    double Iz = .04712; // Nms^2 - yaw moment
 
     // system size
     const int nx = 6;
@@ -47,17 +54,17 @@ struct params
     int variables = Nc*nu;
 
     // Weighting
-    double R1 = 1; // weighting: delta
-    double R2 = 2; // weighting: ax
-    double Q1 = 500; // V-ref weight
-    double Q2 = 50; // e1 weight
-    double Q3 = 1e3; // e2 weight
+    double R1 = 1; // weighting: delta --> don't use steering too much
+    double R2 = 2; // weighting: ax --> don't accel to much
+    double Q1 = 500; // V-ref weight --> track vref
+    double Q2 = 50; // e1 weight --> reduce lateral error
+    double Q3 = 1e3; // e2 weight --> reduce heading error
 
     // Constraints
     double axMin = -3; // m/s^2
     double axMax = +3; // m/s^2
-    double deltaMin = -50.0/180.0*M_PI; // rad
-    double deltaMax = +50.0/180.0*M_PI; // rad
+    double deltaMin = -1*0.4189; // -50.0/180.0*M_PI; // rad
+    double deltaMax = +1*0.4189; // +50.0/180.0*M_PI; // rad
 };
 
 struct System {
@@ -86,17 +93,37 @@ private:
     ros::NodeHandle n;
 
     // Subscriber
-    // ros::Subscriber odom_sub;
-    // ros::Subscriber laser_sub;
+    ros::Subscriber odom_sub;
+    ros::Subscriber imu_sub;
+
+    // Subscribers for optimised path
+    ros::Subscriber path_sub;
+    ros::Subscriber speed_sub;
+    ros::Subscriber yaw_sub;
+    ros::Subscriber curv_sub;
+    ros::Subscriber len_sub;
 
     // Publisher
-    // ros::Publisher break_bool_pub;
+    ros::Publisher drive_pub;
 
     // Declare some variables
     double speed;
+    double steering;
+    double accel;
+    double Vx;
+    double VxDot;
+    double Vy;
+    double psiDot;
+    double e1;
+    double e2;
+
+    double xpos;
+    double ypos;
+    double roll;
+    double pitch;
+    double yaw;
 
     // MPC Stuff
-    params data;
     System cont;
     System dis;
     QPmatrizen qp_matrizen;
@@ -107,28 +134,72 @@ private:
     VectorXd v_ref;
     VectorXd curvature;
 
+    // Drive Topic
+    ackermann_msgs::AckermannDriveStamped drive_msg;
+
+    // PATH DATA
+    VectorXd curv_tot;
+    VectorXd len_tot;
+    VectorXd yaw_tot;
+    VectorXd vref_tot;
+    VectorXd xpos_tot;
+    VectorXd ypos_tot;
+    int current_path_int;
+    int nrWayPoints;
+    VectorXd time_vec;
+    VectorXd curv_mpc;
+    VectorXd vref_mpc;
+
 public:
+
+    // MPC Stuff
+    params data;
+
     mpcPathFollow() { // Constructor of the class
         // Initilization Params
         n = ros::NodeHandle();
         speed = 0.0;
+        steering = 0.0;
+        accel = 0.0;
+        Vx = 0.0;
+        VxDot = 0.0;
+        Vy = 0.0;
+        psiDot = 0.0;
+        e1 = 0.0;
+        e2 = 0.0;
+        xpos = 0.0;
+        ypos = 0.0;
+        roll = 0.0;
+        pitch = 0.0;
+        yaw = 0.0;
+        nrWayPoints = 0;
+        time_vec = VectorXd::LinSpaced(data.Np, 0.0, data.Tl - data.Ts);
+        time_vec = VectorXd::Zero(data.Np);
+        curv_mpc = VectorXd::Zero(data.Np);
+        vref_mpc = VectorXd::Zero(data.Np);
 
         // Make Subscribers
-        // laser_sub = n.subscribe("scan",1,&Safety::scan_callback,this);
-        // odom_sub = n.subscribe("odom",1,&Safety::odom_callback,this);
+        odom_sub = n.subscribe("odom",1,&mpcPathFollow::odom_callback,this);
+        imu_sub = n.subscribe("imu",1,&mpcPathFollow::imu_callback,this);
+        path_sub = n.subscribe("path",1,&mpcPathFollow::path_callback,this);
+        speed_sub = n.subscribe("path_speed",1,&mpcPathFollow::path_vref,this);
+        curv_sub = n.subscribe("path_curv",1,&mpcPathFollow::path_curv,this);
+        len_sub = n.subscribe("path_len",1,&mpcPathFollow::path_len,this);
+        yaw_sub = n.subscribe("path_yaw",1,&mpcPathFollow::path_yaw,this);
 
         // Make Publishers
-        // break_bool_pub = n.advertise<std_msgs>("brake_bool",1);
+        drive_pub = n.advertise<ackermann_msgs::AckermannDriveStamped>("nav", 1);
+
+        // Drive message
+        drive_msg.header.frame_id = "map";
+        drive_msg.drive.steering_angle = 0.0;
+        drive_msg.drive.acceleration = 0.0;
 
         // MPC STUFF
         xk = VectorXd::Zero(data.nx,1);
         v_ref = VectorXd::Zero(data.Np,1);
-        curvature = VectorXd(data.Np,1);
-
-        // Just for tryout --> should normally come from planner and simulation
-        v_ref = VectorXd::Ones(data.Np)*2.7778; // desired velocity for the prediction-horizon
-        xk << 0, 0, 0, 0, 0, 0.6568; // current state
-        curvature = VectorXd::Zero(data.Np)/10;
+        curvature = VectorXd::Zero(data.Np,1);
+        xk << 0, 0, 0, 0, 0, 0.6568; // current state; wild guess for first one
 
         // System-Matrix
         cont = setDynamicsMatrices(data);
@@ -156,13 +227,33 @@ public:
 
         // instantiate the solver
         if(!solver.initSolver()) ROS_INFO_STREAM("MPC: Error in setup");
-
     }
 
     void solveMPC() {
+        // What is needed: xk, velocity (for linearisation), curvature (for path tracking), vref (vector)
+        // Size of stuff:  6,  1, Np, Np
+        // STATE: VxDot, Vx, Vy, psiDot, e1, e2
+
+        // Get for the lookahead window the v_ref, curvature, e1 and e2
+        // e1 ... lateral error to path
+        // e2 ... yaw-error
+        find_closest_point_and_error(); // gives e1/e2 and closest point index
+        build_mpc_vectors(); // buildes vref_mpc and curv_mpc
+
+        // Get current xk: calculate lateral error and heading error
+        xk << VxDot, Vx, Vy, psiDot, e1, e2;
+        
+        // Check for zero velocity
+        double v_lin = 0.0;
+        if (std::abs(Vx) < 0.1) {
+            v_lin = 0.1;
+        } else {
+            v_lin = Vx;
+        }
+    
         // Update hessian --> next step
-        dis = setDiscreteSystem(cont,data,0.1); // Update first the discrete system ---> velocity update!
-        qp_matrizen = setHessianGradient(dis,data,xk,curvature,v_ref); // Build hessian etc
+        dis = setDiscreteSystem(cont,data,v_lin); // Update first the discrete system ---> velocity update!
+        qp_matrizen = setHessianGradient(dis,data,xk,curv_mpc,vref_mpc); // Build hessian etc
         if(!solver.updateHessianMatrix(qp_matrizen.hessian)) ROS_INFO_STREAM("MPC: Error in setup");
         if(!solver.updateGradient(qp_matrizen.gradient)) ROS_INFO_STREAM("MPC: Error in setup");
 
@@ -172,16 +263,195 @@ public:
         };
         QPSolution = solver.getSolution();
 
+        // Extract control commands
+        accel = QPSolution(0);
+        steering = QPSolution(1);
+
+        // PUBLISH COMMANDS
+        // ROS_INFO_STREAM("MPC: accel " << accel << ", steering " << steering);
+
+        // Publish drive message, don't forget to limit the steering angle.
+        drive_msg.header.stamp = ros::Time::now();
+        drive_msg.drive.steering_angle = steering;
+        drive_msg.drive.acceleration = accel;
+        drive_msg.drive.speed = vref_mpc(0);
+        drive_pub.publish(drive_msg);   
+    }
+
+    void path_callback(const nav_msgs::Path::ConstPtr &path_msg) {
+        nrWayPoints = path_msg->poses.size();
+        ROS_INFO("MPC: Nr. of Waypoints received %d", nrWayPoints);
+
+        // Init it
+        xpos_tot = VectorXd::Zero(nrWayPoints);
+        ypos_tot = VectorXd::Zero(nrWayPoints);
+
+        for (int i = 0; i < nrWayPoints; i++) {
+            xpos_tot[i] = path_msg->poses[i].pose.position.x;
+            ypos_tot[i] = path_msg->poses[i].pose.position.y;
+        }
+
+    }
+
+    void path_vref(const std_msgs::Float64MultiArray::ConstPtr &vref_msg) {
+        std::vector<double> std_vector = vref_msg->data;
+        vref_tot = VectorXd::Map(std_vector.data(), std_vector.size());
+
+        // ROS_INFO_STREAM(vref_msg->data[0]);
+        // for (float i: vref_msg->data) {
+        //     std::cout << i << ' ';
+        // }
+    }
+
+    void path_curv(const std_msgs::Float64MultiArray::ConstPtr &curv_msg) {
+        std::vector<double> std_vector = curv_msg->data;
+        curv_tot = VectorXd::Map(std_vector.data(), std_vector.size());
+    }
+
+    void path_len(const std_msgs::Float64MultiArray::ConstPtr &len_msg) {
+        std::vector<double> std_vector = len_msg->data;
+        len_tot = VectorXd::Map(std_vector.data(), std_vector.size());
+    }
+
+    void path_yaw(const std_msgs::Float64MultiArray::ConstPtr &yaw_msg) {
+        std::vector<double> std_vector = yaw_msg->data;
+        yaw_tot = VectorXd::Map(std_vector.data(), std_vector.size());  
     }
 
     void odom_callback(const nav_msgs::Odometry::ConstPtr &odom_msg) {
-        // TODO: update current speed
-        // double x_velocity = odom_msg->twist.twist.linear.x;
-        // speed = x_velocity;
+        // Kalamnfilter hierher --> um auch Vy und psiDot richtig zu schätzen!
+        Vx = odom_msg->twist.twist.linear.x;
+        Vy = odom_msg->twist.twist.linear.y; // Ist empty ...
+        psiDot = odom_msg->twist.twist.angular.z;
+        xpos = odom_msg->pose.pose.position.x;
+        ypos = odom_msg->pose.pose.position.y;
+
+        tf::Quaternion q(odom_msg->pose.pose.orientation.x,
+        odom_msg->pose.pose.orientation.y,
+        odom_msg->pose.pose.orientation.z,
+        odom_msg->pose.pose.orientation.w);
+
+        tf::Matrix3x3 m(q);
+        m.getRPY(roll, pitch, yaw);
     }
 
-    void scan_callback(const sensor_msgs::LaserScan::ConstPtr &scan_msg) {
+    void imu_callback(const sensor_msgs::Imu::ConstPtr &imu_msg) {
+        // Kalamnfilter hierher --> um auch Vy und psiDot richtig zu schätzen!
+        VxDot = imu_msg->linear_acceleration.x;
+        // psiDot = imu_msg->angular_velocity.z;
     }
+
+    void find_closest_point_and_error() {
+
+        if (nrWayPoints > 0) {
+            // Calculate euclidian distances to current vehicle position
+            VectorXd distances(nrWayPoints);
+            for (int i = 0; i < nrWayPoints; i++) {
+                distances[i] = std::sqrt( std::pow( xpos - xpos_tot[i],2) + std::pow( ypos - ypos_tot[i],2)  );
+            }
+
+            // find minimum value and index
+            e1 = distances.minCoeff(&current_path_int);
+            // ROS_INFO_STREAM(e1);
+
+            // calculate error e2
+            e2 = yaw_tot(current_path_int) - yaw;
+            // ROS_INFO("Yaw-Error: %f", e2*180/M_PI);
+
+            // ROS_INFO_STREAM(current_path_int);
+        }
+
+    }
+
+    void build_mpc_vectors() {
+
+        if (nrWayPoints > 0) {
+            // Calculate time forward!
+            // ----------------------------------------------------------------------
+            double dx = 0.05;
+
+            // Find section of interest
+            int final_time_index = 0;
+            int counter = 0;
+            double dt = 0;
+            int eval_index = 0;
+            VectorXd time_sec_of_interest;
+            std::vector<double> times;
+
+            // Init value
+            times.push_back(0.0);
+            while(true) {
+                
+                // Check if we have a overflow --> close to end of trajectory
+                if (current_path_int + counter >= nrWayPoints) {
+                    // We have an overflow
+                    eval_index = counter - (nrWayPoints - current_path_int);
+                } else { // no overflow
+                    eval_index = counter + current_path_int;
+                }
+
+                dt = dx/vref_tot(eval_index);
+                times.push_back(times[counter] + dt);
+
+                // Break condtions
+                if (times[counter + 1] > data.Tl) {
+                    break;
+                }
+
+                if (counter > 1000) {
+                    ROS_INFO_STREAM("MPC: Vectors to short --> ERROR in MPC!!!! FINAL TIME TO LONG!!");
+                }
+
+                counter++;
+            }
+
+            // // Make from std::vector to Eigen::VectorXd --> for OSQP
+            time_sec_of_interest = VectorXd::Map(times.data(), times.size());
+            // ROS_INFO_STREAM(time_sec_of_interest);
+
+            // FIND INDEXES WHICH ARE CLOSEST TO OUR DESIRED ONES
+            // DESIRED: time_vec
+            // GIVEN: time_sec_of_interest
+            // WANT: INDEXES OF time_sec_of_interest closest to time_vec
+            std::vector<int> index_of_int;
+            int index;
+            for(int i = 0; i < time_vec.size(); i++) {
+                double timeOFint = time_vec[i];
+
+                // Shift vector to zero for desired timestamp
+                VectorXd shifted = time_sec_of_interest - timeOFint*VectorXd::Ones(time_sec_of_interest.size());
+                shifted = shifted.array().abs();                  // make abs
+
+                // Get minimum and push back
+                double path_point = shifted.minCoeff(&index);     // find minimum --> closest
+                index_of_int.push_back(index + current_path_int); // add starting index to the array
+            }
+
+            // NOW FOUND INDEXES --> BUILD MPC_VECTORS
+            vref_mpc = vref_tot(index_of_int);
+            curv_mpc = curv_tot(index_of_int);
+
+        } 
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     // MPC STUFF HERE -- WE SHOULD PUT THIS IN AN OUTHER FILE AND CLASS
     // ----------------------------------------------------------------
@@ -363,25 +633,22 @@ int main(int argc, char ** argv){
     auto controller = mpcPathFollow();
 
     // DEBUG MESSAGE
-    ROS_INFO_STREAM("starting with safety brake");
+    ROS_INFO_STREAM("MPC: STARTING CONTROLLER!");
 
     // Make ROS-Rate-Update-Rate
-    ros::Rate loop_rate(10);
-    int count=0;
-
-    
+    ros::Rate loop_rate(1/controller.data.tau);
 
     // START ROS-LOOP
     while (ros::ok())
     {
 
         // RUN MPC
-        auto t1 = high_resolution_clock::now();
+        // auto t1 = high_resolution_clock::now();
         controller.solveMPC();
-        auto t2 = high_resolution_clock::now();
-        duration<double, std::milli> ms_double = (t2 - t1)/1;
+        // auto t2 = high_resolution_clock::now();
+        // duration<double, std::milli> ms_double = (t2 - t1)/1;
 
-        std::cout << "\nMPC runtime: " << ms_double.count() << "ms\n";
+        // std::cout << "\nMPC runtime: " << ms_double.count() << "ms\n";
 
         // Step once and wait time
         ros::spinOnce();

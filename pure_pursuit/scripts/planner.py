@@ -24,7 +24,7 @@ from geometry_msgs.msg import PoseStamped
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
 
 
-from std_msgs.msg import Header, ColorRGBA
+from std_msgs.msg import Header, ColorRGBA, Float64MultiArray
 from geometry_msgs.msg import Point, Point32
 from visualization_msgs.msg import Marker
 from tf import transformations # rotation_matrix(), concatenate_matrices()
@@ -34,8 +34,7 @@ from skimage import io, morphology, img_as_ubyte
 # import  rviz_tools
 from skimage.morphology import disk  # noqa
 
-
-
+import matplotlib.pyplot as plt
 
 HZ = 100
 
@@ -49,6 +48,10 @@ class planner:
         map_topic = '/map'
         odom_topic = '/odom'
         path_topic = '/path'
+        path_speed = '/path_speed'
+        path_curv = '/path_curv'
+        path_len = '/path_len'
+        path_yaw = '/path_yaw'
 
          # rosrate
         self.r = rospy.Rate(HZ)
@@ -67,6 +70,10 @@ class planner:
         self.marker_pub = rospy.Publisher('visualization_marker', Marker, queue_size=1)
         self.markers_pub = rospy.Publisher('visualization_marker_array', MarkerArray,queue_size=1)
         self.path_pub = rospy.Publisher(path_topic,Path,queue_size=1,latch=True) # ... todo
+        self.path_speed_pub = rospy.Publisher(path_speed,Float64MultiArray,queue_size=1,latch=True)
+        self.path_curv_pub = rospy.Publisher(path_curv,Float64MultiArray,queue_size=1,latch=True)
+        self.path_len_pub = rospy.Publisher(path_len,Float64MultiArray,queue_size=1,latch=True)
+        self.path_yaw_pub = rospy.Publisher(path_yaw,Float64MultiArray,queue_size=1,latch=True)
 
 
     def floodfill_stack(self,matrix,x,y,n_safety):     
@@ -160,9 +167,15 @@ class planner:
             Publish the ROS message containing the waypoints
             """
             self.current_route=route
-            msg = Path()
-            msg.header.frame_id = "map"
-            msg.header.stamp = rospy.Time.now()
+
+            # for MPC
+            s_vec = np.zeros(len(self.current_route))
+            x_vec = np.zeros(len(self.current_route))
+            y_vec = np.zeros(len(self.current_route))
+            z_vec = np.zeros(len(self.current_route))
+            yaw_vec = np.zeros(len(self.current_route))
+            pitch_vec = np.zeros(len(self.current_route))
+
             if self.current_route is not None:
                 for wp in (range(0,len(self.current_route)-1)):         
                     first_locationX = self.current_route[wp][1]*0.05-50
@@ -173,27 +186,99 @@ class planner:
                     second_locationY = self.current_route[wp+1][0]*0.05-50
                     second_locationZ = 0
 
-                    pose = PoseStamped()
-                    pose.pose.position.x = first_locationX
-                    pose.pose.position.y = first_locationY
-                    pose.pose.position.z = first_locationZ
                     dX = first_locationX - second_locationX
                     dY = first_locationY - second_locationY
                     dZ = first_locationZ - second_locationZ
 
-                    yaw=math.atan2(dZ, dX)
+                    yaw = math.atan2(dY, dX)
                     pitch = math.atan2(math.sqrt(dZ * dZ + dX * dX), dY) + math.pi
 
-                    quaternion = quaternion_from_euler(0, 0, -math.radians(yaw))
+                    # Calculate some stuff
+                    x_vec[wp] = first_locationX
+                    y_vec[wp] = first_locationY
+                    z_vec[wp] = first_locationZ
+                    yaw_vec[wp] = yaw
+                    pitch_vec[wp] = pitch
+                    s_vec[wp + 1] = s_vec[wp] + np.sqrt(dX**2 + dY**2 + dZ**2)
+
+                # Last location
+                x_vec[wp + 1] = second_locationX
+                y_vec[wp + 1] = second_locationY
+                z_vec[wp + 1] = second_locationZ
+
+                # Calculate curvature
+                [s_big,x_big,y_big,curv_big,vref_big,yaw_big,pitch_big] = self.calc_curvature_vref_interp(s_vec,x_vec,y_vec,yaw_vec,pitch_vec)
+
+                # GEN PATH
+                msg = Path()
+                msg.header.frame_id = "map"
+                msg.header.stamp = rospy.Time.now()
+
+                msg_speed = Float64MultiArray()
+                msg_speed.data = vref_big
+                self.path_speed_pub.publish(msg_speed)
+
+                msg_curv = Float64MultiArray()
+                msg_curv.data = curv_big
+                self.path_curv_pub.publish(msg_curv)
+
+                msg_len = Float64MultiArray()
+                msg_len.data = s_big
+                self.path_len_pub.publish(msg_len)
+
+                msg_yaw = Float64MultiArray()
+                msg_yaw.data = yaw_big
+                self.path_yaw_pub.publish(msg_yaw)
+
+                for idx, val in enumerate(s_big):
+                    pose = PoseStamped()
+                    pose.pose.position.x = x_big[idx]
+                    pose.pose.position.y = y_big[idx]
+                    pose.pose.position.z = 0
+
+                    quaternion = quaternion_from_euler(0, 0, -math.radians(yaw_big[idx]))
                     pose.pose.orientation.x = quaternion[0]
                     pose.pose.orientation.y = quaternion[1]
                     pose.pose.orientation.z = quaternion[2]
                     pose.pose.orientation.w = quaternion[3]
                     msg.poses.append(pose)
 
-            self.path_pub.publish(msg)
-            rospy.loginfo("Published {} waypoints.".format(len(msg.poses))) 
+                self.path_pub.publish(msg)
+                rospy.loginfo("Published {} waypoints.".format(len(msg.poses))) 
 
+    def calc_curvature_vref_interp(self, s, x, y, yaw, pitch):
+        dx_dt = np.gradient(x)
+        dy_dt = np.gradient(y)
+
+        d2x_dt2 = np.gradient(dx_dt)
+        d2y_dt2 = np.gradient(dy_dt)
+
+        # Curvature
+        curvature = (dx_dt * d2y_dt2 - d2x_dt2 * dy_dt) / (dx_dt * dx_dt + dy_dt * dy_dt)**1.5
+
+        # Calculate reference velocity
+        v_ref = np.zeros(len(curvature))
+        for idx, kappa in enumerate(curvature):
+            v_ref[idx] = np.sqrt(9.81*0.1/np.abs(kappa))
+            v_ref[idx] = np.min((v_ref[idx], 3))
+        
+        # DEBUG
+        print(curvature)
+        print(x)
+        print(y)
+        print(yaw)
+
+        # Interpolate everything!
+        dx = 0.05
+        s_big = np.arange(s[0],s[-1],dx)
+        x_big = np.interp(s_big,s,x)
+        y_big = np.interp(s_big,s,y)
+        curv_big = np.interp(s_big,s,curvature)
+        vref_big = np.interp(s_big,s,v_ref)
+        yaw_big = np.interp(s_big,s,yaw)
+        pitch_big = np.interp(s_big,s,pitch)
+
+        return s_big,x_big,y_big,curv_big,vref_big,yaw_big,pitch_big
 
     def map_callback(self, data):
         """ Process the map to pre-compute the path to follow and publish it

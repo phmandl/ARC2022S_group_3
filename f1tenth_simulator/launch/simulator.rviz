@@ -6,6 +6,7 @@ Panels:
       Expanded:
         - /Global Options1
         - /Status1
+        - /Path1
       Splitter Ratio: 0.5
     Tree Height: 495
   - Class: rviz/Selection
@@ -180,7 +181,7 @@ Visualization Manager:
       Radius: 0.029999999329447746
       Shaft Diameter: 0.10000000149011612
       Shaft Length: 0.10000000149011612
-      Topic: /smoothed_path
+      Topic: /path
       Unreliable: false
       Value: true
     - Class: rviz/Marker
@@ -287,9 +288,9 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: 10.656041145324707
-        Y: -3.319880962371826
-        Z: 0.010322161950170994
+        X: 4.767050266265869
+        Y: -7.506002426147461
+        Z: 0.004342546220868826
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
@@ -317,5 +318,5 @@ Window Geometry:
   Views:
     collapsed: true
   Width: 1536
-  X: 8
-  Y: 31
+  X: 1318
+  Y: 508

@@ -14,7 +14,8 @@ find_package(catkin REQUIRED COMPONENTS
 )
 
 # EIGEN STUFF
-find_package(Eigen3 3.3 REQUIRED NO_MODULE)
+# find_package(Eigen3 3.3 REQUIRED NO_MODULE)
+find_package(Eigen3 3.4 REQUIRED NO_MODULE) # --> to make seqN work we need 3.4
 
 # Find OSQP library and headers
 find_package(OsqpEigen REQUIRED)
