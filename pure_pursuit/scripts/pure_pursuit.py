@@ -101,7 +101,12 @@ class pure_pursuit:
         """
         """
         self.path = np.array([[pt.pose.position.x, pt.pose.position.y] for pt in traj_msg.poses])
-        self.path = self.path[::-1]
+
+        # TURN PATH AROUND!
+        # ---------------------------
+        # self.path = self.path[::-1] 
+        # ---------------------------
+
         self.path_available=True
         # Compute the velocity in path depending on the angle
         #if len(traj_msg) == 0:
@@ -116,6 +121,7 @@ class pure_pursuit:
         #position = np.array([odom_msg.pose.pose.position.x, odom_msg.pose.pose.position.y])
         point_dist = np.linalg.norm(self.path[:, 0:2] - self.position, axis=1)
         cur_idx = np.argmin(point_dist)
+        # print(cur_idx)
         return cur_idx
 
     def compute_lookahead(self, cur_idx, method='angle'):
@@ -224,6 +230,7 @@ class pure_pursuit:
         drive_msg.drive.steering_angle = self.steering_angle_factor * angle
         drive_msg.drive.speed = self.speed_factor * speed
         self.drive_pub.publish(drive_msg)
+
         return 0
 
     # def publish_waypoint_vis_msg(self, x, y):
