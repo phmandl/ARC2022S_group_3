@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<launch>
+    <include file="$(find pure_pursuit)/launch/simulator.launch"/>
+
+    <!-- Begin the simulator with the parameters from params.yaml -->
+  <node pkg="mpc_path_follow" name="mpc" type="mpc_path_follow_node" output="screen">
+  </node>
+
+</launch>

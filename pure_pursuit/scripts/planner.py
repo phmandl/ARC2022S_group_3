@@ -8,6 +8,7 @@ import math
 from matplotlib.pyplot import xcorr
 import numpy as np
 import heapq
+from numpy import True_
 import scipy.interpolate as si
 
 import csv
@@ -50,7 +51,7 @@ from skimage.morphology import disk ,binary_closing,skeletonize # noqa
 
 HZ = 100
 SHORTEST_PATH=False
-READ_ROUTE=True
+READ_ROUTE=False
 
 
 class planner:
@@ -64,7 +65,7 @@ class planner:
 
          # rosrate
         self.r = rospy.Rate(HZ)
-        self.n_safety=7
+        self.n_safety=2
         self.map_binary= np.zeros( (2000, 2000) , dtype=np.int8) 
         self.skeleton_binary = np.zeros( (2000, 2000) , dtype=np.int8) 
         self.driveable= np.ones( (2000, 2000) , dtype=np.int64)
@@ -124,7 +125,16 @@ class planner:
     def floodfill_center(self,matrix,x,y,n_safety):     
         self.markerArray = MarkerArray()
         selected_pixel_sign = matrix[x,y]
-        stack=[(999,999)]
+        stack=[(x,y)]
+        print('x',x)
+        
+        for  ix in range(-5, 5): 
+            print(matrix[x+ix,y])
+
+
+            
+
+
         print(selected_pixel_sign)
         m,n = matrix.shape
         while stack:
@@ -281,9 +291,10 @@ class planner:
         free_thresh = 0.2
         footprint = disk(self.n_safety)
 
-        map_data = np.asarray(data.data).reshape((data.info.width, data.info.height)) # parse map data into 2D numpy array
+        map_data = np.asarray(data.data).reshape((data.info.height, data.info.width)) # parse map data into 2D numpy array
         map_data = morphology.dilation(map_data,footprint)
         map_normalized = map_data / np.amax(map_data.flatten()) # normalize map
+        
         self.map_binary = map_normalized < (occupied_thresh) # make binary occupancy map
         
         self.pos_x = data.info.origin.position.x # pos in -50 to 50
@@ -292,12 +303,12 @@ class planner:
         self.grid_x =  int(- self.pos_x / data.info.resolution )# in pixel
         self.grid_y =  int(- self.pos_y / data.info.resolution ) # in pixel
         
-        self.map_binary = np.rot90(np.flip(self.map_binary, 1), 0) # flip and rotate for rendering as image in correct direction
-        self.map_binary = np.rot90(np.flip(self.map_binary, 1), 0) # flip and rotate for rendering as image in correct direction
+        self.map_binary = np.rot90(np.flip(self.map_binary, 0), 1) # flip and rotate for rendering as image in correct direction
+        self.map_binary = np.rot90(np.flip(self.map_binary, 0), 1) # flip and rotate for rendering as image in correct direction
         self.skeleton_binary = binary_closing(skeletonize(self.map_binary),footprint)
         #mask = flood(self.skeleton_binary, (1000, 1000), tolerance=0)
         #self.skeleton_pt=self.skeleton_binary *0.05-50
-        #io.imsave('~/catkin_ws/src/pure_pursuit/maps/skel_test.png', img_as_ubyte(self.skeleton_binary), check_contrast=False) # save image, just to show the content of the 2D array for debug purposes
+        io.imsave('~/catkin_ws/src/pure_pursuit/maps/skel_test.png', img_as_ubyte(self.skeleton_binary), check_contrast=False) # save image, just to show the content of the 2D array for debug purposes
 
 def heuristic(a, b):
     return np.sqrt((b[0] - a[0]) ** 2 + (b[1] - a[1]) ** 2)
@@ -386,9 +397,11 @@ def main(args):
             route = astar(rfgs.driveable, start, goal)
             route=bspline(route,n=200,degree=120,periodic=True) 
         else:
+            print('x',rfgs.grid_x)
+            print('y',rfgs.grid_y)
             rospy.sleep(15) # Sleeps for 1 sec   
-            rfgs.centerline= rfgs.floodfill_center(rfgs.skeleton_binary,999,999,0)
-            route = astar(rfgs.centerline, start, goal)
+            rfgs.centerline= rfgs.floodfill_center(rfgs.skeleton_binary,25,25,0)
+            route = astar(rfgs.centerline, (25,25),(25,25-1))
         rospy.sleep(1) # Sleeps for 1 sec
         rfgs.publish_waypoints(route)
         rospy.sleep(1) # Sleeps for 1 se
@@ -397,7 +410,7 @@ def main(args):
     while not rospy.is_shutdown():          
 
         if fertig==False: 
-            #rfgs.visualize_maps(rfgs.centerline)
+            rfgs.visualize_maps(rfgs.centerline)
             if READ_ROUTE==True: 
                 rospy.sleep(4) # Sleeps for 1 sec
                 route=bspline(rfgs.route_pre,n=500,degree=3,periodic=True) 
