@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<launch>
+
+	<include
+		file="$(find racecar)/launch/teleop.launch">
+ 	</include>
+ 
+ 	<node 
+	 	pkg="wall_follow" 
+	 	name="wall_follow" 
+	 	type="wall_follow_node.py" 
+	 	output="screen">
+
+		<remap from="/scan" to="/scan"/>
+		<remap from="/odom" to="/vesc/odom"/>
+		<remap from="/brake_bool" to="/brake_bool"/>
+		<remap from="/brake" to="/vesc/low_level/ackermann_cmd_mux/input/safety"/>
+		<remap from="/vesc/joy" to="/joy"/>
+		<remap from="/nav" to="/vesc/high_level/ackermann_cmd_mux/input/nav_0"/>
+	 </node>
+	 
+</launch>
+	

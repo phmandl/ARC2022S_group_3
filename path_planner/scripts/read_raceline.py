@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 import sys
 import math
 import numpy as np
@@ -22,21 +22,23 @@ class planner:
         path_topic = '/path'
         mpc_topic = '/mpc_path'
         odom_topic = '/odom'
+        odom_pf_topic = '/pf/pose/odom'
 
         # rosrate
-        self.Hz = 200
+        self.Hz = 50
         self.r = rospy.Rate(self.Hz)
 
         # Publisher
-        self.path_pub = rospy.Publisher(path_topic,Path,queue_size=1)
+        self.path_pub = rospy.Publisher(path_topic,Path,queue_size=1,latch=True)
         self.mpc_path_pub = rospy.Publisher(mpc_topic,Path,queue_size=1)
 
         # Subscriber
         self.odom_sub = rospy.Subscriber(odom_topic,Odometry,self.odom_callback)
+        self.pf_odom_sub = rospy.Subscriber(odom_pf_topic,Odometry,self.pf_odom_callback)
 
         # CSV file
         self.dirname = os.path.dirname(__file__)
-        self.filename = os.path.join(self.dirname, '../waypoints/f1_wide_log_minCurv.csv')
+        self.filename = os.path.join(self.dirname, '../waypoints/traj_race_cl.csv')
         
         # MPC Stuffy
         self.Tl = 0.5 # Endtime
@@ -62,13 +64,14 @@ class planner:
         # Vehicle stuffy
         self.x_pos = 0.0
         self.y_pos = 0.0
+        self.yaw = 0.0
 
     def read_waypoints(self):
         """
         Import waypoints.csv into a list (path_points)
         """
         CSVData = open(self.filename)
-        self.route = np.genfromtxt(CSVData, delimiter=",")
+        self.route = np.genfromtxt(CSVData, delimiter=";")
         rospy.loginfo("Planner: Read CSV file!")
     
     def publish_waypoints(self):
@@ -199,11 +202,25 @@ class planner:
         return (val + np.pi) % (2 * np.pi) - np.pi
 
     def odom_callback(self,msg):
-        self.x_pos = msg.pose.pose.position.x
-        self.y_pos = msg.pose.pose.position.y
+        # self.x_pos = msg.pose.pose.position.x
+        # self.y_pos = msg.pose.pose.position.y
         self.vx = msg.twist.twist.linear.x
         self.vy = msg.twist.twist.linear.y
         self.yaw_rate = msg.twist.twist.angular.z
+
+        # rot_x = msg.pose.pose.orientation.x
+        # rot_y = msg.pose.pose.orientation.y
+        # rot_z = msg.pose.pose.orientation.z
+        # rot_w = msg.pose.pose.orientation.w
+        # euler_angles = euler_from_quaternion([rot_x,rot_y,rot_z,rot_w])
+        # self.yaw = self.wrap_to_pi(euler_angles[2])
+
+    def pf_odom_callback(self,msg):
+        self.x_pos = msg.pose.pose.position.x
+        self.y_pos = msg.pose.pose.position.y
+        # self.vx = msg.twist.twist.linear.x
+        # self.vy = msg.twist.twist.linear.y
+        # self.yaw_rate = msg.twist.twist.angular.z
 
         rot_x = msg.pose.pose.orientation.x
         rot_y = msg.pose.pose.orientation.y

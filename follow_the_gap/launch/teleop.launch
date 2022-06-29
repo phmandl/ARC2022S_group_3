@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<launch>
+
+	<include
+		file="$(find racecar)/launch/teleop.launch">
+ 	</include>
+
+	<include
+		file="$(find path_planner)/launch/read_raceline_teleop.launch">
+ 	</include>
+
+	
+ 
+ 	<node 
+	 	pkg="follow_the_gap" 
+	 	name="follow_the_gap" 
+	 	type="follow_the_gap_node.py" 
+	 	output="screen">
+
+		<remap from="/scan" to="/scan"/>
+		<remap from="/odom" to="/vesc/odom"/>
+		<remap from="/brake_bool" to="/brake_bool"/>
+		<remap from="/brake" to="/vesc/low_level/ackermann_cmd_mux/input/safety"/>
+		<remap from="/vesc/joy" to="/joy"/>
+		<remap from="/nav" to="/vesc/high_level/ackermann_cmd_mux/input/nav_0"/>
+	 </node>
+	 
+</launch>
+	

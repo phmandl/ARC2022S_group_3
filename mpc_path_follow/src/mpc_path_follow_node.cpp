@@ -35,10 +35,10 @@ struct params
     double tau = 0.1; // s - drive train time constant
     double C_alpha_f = 4.718; // Np/rad - cornering stiffnes front
     double C_alpha_r = 5.4562; // Np/rad - cornering stiffnes rear
-    double m = 3.47; // kg
+    double m = 5; // kg
     double L_f = 0.15875; // m - CoM to front
     double L_r = 0.17145; // m - CoM to rear
-    double Iz = .04712; // Nms^2 - yaw moment
+    double Iz = .08; // Nms^2 - yaw moment
 
     // system size
     const int nx = 6;
@@ -54,17 +54,17 @@ struct params
     int variables = Nc*nu;
 
     // Weighting
-    double R1 = 5; // weighting: delta --> don't use steering too much
+    double R1 = 5; // weighting: delta --> don't use steering too much %5
     double R2 = 1; // weighting: ax --> don't accel to much
     double Q1 = 1; // V-ref weight --> track vref
-    double Q2 = 2; // e1 weight --> reduce lateral error
-    double Q3 = 1; // e2 weight --> reduce heading error 1e3
+    double Q2 = 5; // e1 weight --> reduce lateral error
+    double Q3 = 75; // e2 weight --> reduce heading error 1e3
 
     // Constraints
     double axMin = -3; // m/s^2
     double axMax = +3; // m/s^2
-    double deltaMin = -1*0.4189; // -50.0/180.0*M_PI; // rad
-    double deltaMax = +1*0.4189; // +50.0/180.0*M_PI; // rad
+    double deltaMin = -50.0/180.0*M_PI; // -50.0/180.0*M_PI; // rad // Simulator: -1*0.4189 ... 23°
+    double deltaMax = +50.0/180.0*M_PI; // +50.0/180.0*M_PI; // rad
 };
 
 struct System {
@@ -94,7 +94,8 @@ private:
 
     // Subscriber
     ros::Subscriber odom_sub;
-    ros::Subscriber imu_sub;
+    ros::Subscriber pf_odom_sub;
+    // ros::Subscriber imu_sub;
 
     // Subscribers for optimised path
     ros::Subscriber path_sub;
@@ -172,7 +173,8 @@ public:
 
         // Make Subscribers
         odom_sub = n.subscribe("odom",1,&mpcPathFollow::odom_callback,this);
-        imu_sub = n.subscribe("imu",1,&mpcPathFollow::imu_callback,this);
+        pf_odom_sub = n.subscribe("pf/pose/odom",1,&mpcPathFollow::pf_odom_callback,this);
+        // imu_sub = n.subscribe("imu",1,&mpcPathFollow::imu_callback,this);
         path_sub = n.subscribe("mpc_path",1,&mpcPathFollow::path_callback,this);
 
         // Make Publishers
@@ -274,9 +276,29 @@ public:
     void odom_callback(const nav_msgs::Odometry::ConstPtr &odom_msg) {
         // Kalamnfilter hierher --> um auch Vy und psiDot richtig zu schätzen!
         Vx = odom_msg->twist.twist.linear.x;
-        
         Vy = odom_msg->twist.twist.linear.y; // Ist empty ...
         psiDot = odom_msg->twist.twist.angular.z;
+
+        // xpos = odom_msg->pose.pose.position.x;
+        // ypos = odom_msg->pose.pose.position.y;
+
+        // tf::Quaternion q(odom_msg->pose.pose.orientation.x,
+        // odom_msg->pose.pose.orientation.y,
+        // odom_msg->pose.pose.orientation.z,
+        // odom_msg->pose.pose.orientation.w);
+
+        // tf::Matrix3x3 m(q);
+        // m.getRPY(roll, pitch, yaw);
+        // yaw = wrap_to_pi(yaw);
+
+        // ROS_INFO_STREAM(Vy << " " << VxDot << " ");
+    }
+
+    void pf_odom_callback(const nav_msgs::Odometry::ConstPtr &odom_msg) {
+        // Kalamnfilter hierher --> um auch Vy und psiDot richtig zu schätzen!
+        // Vx = odom_msg->twist.twist.linear.x;
+        // Vy = odom_msg->twist.twist.linear.y; // Ist empty ...
+        // psiDot = odom_msg->twist.twist.angular.z;
         xpos = odom_msg->pose.pose.position.x;
         ypos = odom_msg->pose.pose.position.y;
 
@@ -296,11 +318,11 @@ public:
         return std::fmod(val + M_PI, 2*M_PI) - M_PI;
     }
 
-    void imu_callback(const sensor_msgs::Imu::ConstPtr &imu_msg) {
-        // Kalamnfilter hierher --> um auch Vy und psiDot richtig zu schätzen!
-        VxDot = imu_msg->linear_acceleration.x;
-        // psiDot = imu_msg->angular_velocity.z;
-    }
+    // void imu_callback(const sensor_msgs::Imu::ConstPtr &imu_msg) {
+    //     // Kalamnfilter hierher --> um auch Vy und psiDot richtig zu schätzen!
+    //     VxDot = imu_msg->linear_acceleration.x;
+    //     // psiDot = imu_msg->angular_velocity.z;
+    // }
 
 
 

@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<launch>
+
+  <!-- Begin the simulator with the parameters from params.yaml -->
+  <node 
+      pkg="path_planner" 
+      name="planner" 
+      type="read_raceline.py" 
+      output="screen"> 
+
+      <remap from="/scan" to="/scan"/>
+      <remap from="/odom" to="/vesc/odom"/>
+      <remap from="/brake_bool" to="/brake_bool"/>
+      <remap from="/brake" to="/vesc/low_level/ackermann_cmd_mux/input/safety"/>
+      <remap from="/vesc/joy" to="/joy"/>
+      <remap from="/nav" to="/vesc/high_level/ackermann_cmd_mux/input/nav_0"/>
+  </node>
+
+</launch>
